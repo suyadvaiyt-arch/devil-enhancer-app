@@ -16,6 +16,7 @@ jobs:
           
       - run: npm install
       - run: npx cap add android
+      - run: sed -i 's/minSdkVersion = 23/minSdkVersion = 24/' android/variables.gradle
       - run: python3 -c 'p="android/app/build.gradle";s=open(p).read();s=s.replace("dependencies {","dependencies {\n    implementation \"dev.ffmpegkit-maintained:ffmpeg-kit-full:8.1.7\"");open(p,"w").write(s)'
       - run: npx cap sync android
       - uses: actions/setup-java@v4
