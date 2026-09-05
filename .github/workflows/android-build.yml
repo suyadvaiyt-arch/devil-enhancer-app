@@ -1,4 +1,4 @@
-name:  Devil Enhancer Android Build
+name: Devil Enhancer Android Build
 
 on:
   workflow_dispatch:
@@ -8,26 +8,54 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          
+
       - run: npm install
+
       - run: npx cap add android
-      - run: sed -i 's/minSdkVersion = 23/minSdkVersion = 24/' android/variables.gradle
-      - run: python3 -c 'p="android/app/build.gradle";s=open(p).read();s=s.replace("dependencies {","dependencies {\n    implementation \"dev.ffmpegkit-maintained:ffmpeg-kit-full:8.1.7\"");open(p,"w").write(s)'
+
+      - run: |
+          python3 - <<'PY'
+          p="android/app/build.gradle"
+          s=open(p).read()
+          s=s.replace("minSdkVersion = 23", "minSdkVersion = 24")
+          s=s.replace("minSdkVersion 23", "minSdkVersion 24")
+          open(p,"w").write(s)
+          PY
+
+      - run: |
+          python3 - <<'PY'
+          p="android/app/build.gradle"
+          s=open(p).read()
+          if "dev.ffmpegkit-maintained:ffmpeg-kit-full:8.1.7" not in s:
+              s=s.replace(
+                  "dependencies {",
+                  'dependencies {\n    implementation "dev.ffmpegkit-maintained:ffmpeg-kit-full:8.1.7"',
+                  1
+              )
+          open(p,"w").write(s)
+          PY
+
       - run: npx cap sync android
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
+
       - uses: android-actions/setup-android@v3
+
       - run: chmod +x android/gradlew
+
       - run: cd android && ./gradlew assembleDebug
+
       - uses: actions/upload-artifact@v4
         with:
           name: devil-enhancer-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          
