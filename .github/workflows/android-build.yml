@@ -2,7 +2,7 @@ name:  Devil Enhancer Android Build
 
 on:
   workflow_dispatch:
-    push:
+  push:
     branches: [main]
 
 jobs:
