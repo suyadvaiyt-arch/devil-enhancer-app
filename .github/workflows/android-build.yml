@@ -118,6 +118,15 @@ jobs:
 
       - uses: android-actions/setup-android@v3
 
+      - name: Set minSdkVersion to 24
+        run: |
+          python3 - <<'PY'
+          p="android/variables.gradle"
+          s=open(p).read()
+          s=s.replace("minSdkVersion = 23", "minSdkVersion = 24")
+          open(p, "w").write(s)
+          PY
+
       - run: chmod +x android/gradlew
 
       - run: cd android && ./gradlew assembleDebug
