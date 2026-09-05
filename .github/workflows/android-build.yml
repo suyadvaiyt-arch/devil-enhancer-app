@@ -221,7 +221,7 @@ jobs:
               }
           }
           JAVA 
-      - name: Patch MainActivity
+      - - name: Patch MainActivity
         shell: bash
         run: |
           python3 - <<'PY'
