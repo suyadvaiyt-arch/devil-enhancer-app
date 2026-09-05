@@ -87,12 +87,12 @@ jobs:
             );
         }
        }
-       JAVA
+          JAVA
        
-           - run: |
-        python3 - <<'PY'
-        p="android/app/src/main/java/com/devil/enhancer/MainActivity.java"
-        s=open(p).read()
+      - run: |
+         python3 - <<'PY'
+         p="android/app/src/main/java/com/devil/enhancer/MainActivity.java"
+         s=open(p).read()
 
         if "import com.devil.enhancer.EnhancerPlugin;" not in s:
             s=s.replace(
@@ -106,8 +106,8 @@ jobs:
                 "registerPlugin(EnhancerPlugin.class);\n        super.onCreate(savedInstanceState);"
             )
 
-        open(p,"w").write(s)
-        PY
+          open(p,"w").write(s)
+          PY
     
       - run: npx cap sync android
       - uses: actions/setup-java@v4
