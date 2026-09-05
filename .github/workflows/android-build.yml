@@ -1,4 +1,4 @@
-name: Build Android
+name:  Devil Enhancer Android Build
 
 on:
   workflow_dispatch:
