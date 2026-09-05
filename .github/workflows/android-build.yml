@@ -42,7 +42,7 @@ jobs:
           open(p,"w").write(s)
           PY
             - name: Create EnhancerPlugin
-        run: |
+      - run: |
           mkdir -p android/app/src/main/java/com/devil/enhancer
 
           cat > android/app/src/main/java/com/devil/enhancer/EnhancerPlugin.java <<'JAVA'
