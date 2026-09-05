@@ -41,52 +41,186 @@ jobs:
               )
           open(p,"w").write(s)
           PY
-      - run: |
-         mkdir -p android/app/src/main/java/com/devil/enhancer
-         cat > android/app/src/main/java/com/devil/enhancer/EnhancerPlugin.java <<'JAVA'
-         package com.devil.enhancer;
+            - name: Create EnhancerPlugin
+        run: |
+          mkdir -p android/app/src/main/java/com/devil/enhancer
 
-         import android.content.Intent;
-         import android.net.Uri;
+          cat > android/app/src/main/java/com/devil/enhancer/EnhancerPlugin.java <<'JAVA'
+          package com.devil.enhancer;
 
-         import androidx.activity.result.ActivityResult;
-         import com.getcapacitor.Plugin;
-         import com.getcapacitor.PluginCall;
-         import com.getcapacitor.PluginMethod;
-         import com.getcapacitor.annotation.ActivityCallback;
-         import com.getcapacitor.annotation.CapacitorPlugin;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.net.Uri;
 
-         @CapacitorPlugin(name = "Enhancer")
-         public class EnhancerPlugin extends Plugin {
+          import androidx.activity.result.ActivityResult;
 
-         @PluginMethod
-         public void pickVideo(PluginCall call) {
-            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            intent.setType("video/*");
-            startActivityForResult(call, intent, "videoPicked");
-         }
+          import com.arthenica.ffmpegkit.FFmpegKit;
+          import com.arthenica.ffmpegkit.ReturnCode;
 
-         @ActivityCallback
-         private void videoPicked(PluginCall call, ActivityResult result) {
-            if (result.getResultCode() != android.app.Activity.RESULT_OK) {
-                call.reject("Video selection cancelled");
-                return;
-            }
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.ActivityCallback;
+          import com.getcapacitor.annotation.CapacitorPlugin;
 
-            Intent data = result.getData();
-            if (data == null || data.getData() == null) {
-                call.reject("No video selected");
-                return;
-            }
+          import android.util.Base64;
 
-            Uri uri = data.getData();
+          import java.io.File;
+          import java.io.FileOutputStream;
 
-            call.resolve(
-                new com.getcapacitor.JSObject().put("uri", uri.toString())
-            );
-         }
-         }
+          @CapacitorPlugin(name = "Enhancer")
+          public class EnhancerPlugin extends Plugin {
+
+              @PluginMethod
+              public void pickVideo(PluginCall call) {
+                  Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                  intent.addCategory(Intent.CATEGORY_OPENABLE);
+                  intent.setType("video/*");
+
+                  startActivityForResult(call, intent, "videoPicked");
+              }
+
+              @ActivityCallback
+              private void videoPicked(PluginCall call, ActivityResult result) {
+                  if (result.getResultCode() != android.app.Activity.RESULT_OK ||
+                      result.getData() == null) {
+                      call.reject("Video selection cancelled");
+                      return;
+                  }
+
+                  Uri uri = result.getData().getData();
+
+                  if (uri == null) {
+                      call.reject("Video URI is empty");
+                      return;
+                  }
+
+                  JSObjectData(call, uri.toString());
+              }
+
+              private void JSObjectData(PluginCall call, String uri) {
+                  com.getcapacitor.JSObject ret =
+                      new com.getcapacitor.JSObject();
+
+                  ret.put("uri", uri);
+
+                  call.resolve(ret);
+              }
+
+              @PluginMethod
+              public void enhanceVideo(PluginCall call) {
+
+                  String data = call.getString("data");
+                  String fileName = call.getString("fileName", "video.mp4");
+                  String mode = call.getString("mode", "4K");
+
+                  if (data == null || data.isEmpty()) {
+                      call.reject("Video data is missing");
+                      return;
+                  }
+
+                  try {
+
+                      Context context = getContext();
+
+                      File workDir = context.getCacheDir();
+
+                      File inputFile =
+                          new File(workDir, "enhancer_input.mp4");
+
+                      File outputFile =
+                          new File(
+                              context.getExternalFilesDir(null),
+                              "Enhanced_" + System.currentTimeMillis() + ".mp4"
+                          );
+
+                      byte[] videoBytes =
+                          Base64.decode(data, Base64.DEFAULT);
+
+                      FileOutputStream fos =
+                          new FileOutputStream(inputFile);
+
+                      fos.write(videoBytes);
+                      fos.flush();
+                      fos.close();
+
+                      String size;
+
+                      if ("8K".equalsIgnoreCase(mode)) {
+                          size = "7680:4320";
+                      } else {
+                          size = "3840:2160";
+                      }
+
+                      String input =
+                          inputFile.getAbsolutePath();
+
+                      String output =
+                          outputFile.getAbsolutePath();
+
+                      String command =
+                          "-y " +
+                          "-i \"" + input + "\" " +
+                          "-vf \"scale=" + size +
+                          ":force_original_aspect_ratio=decrease," +
+                          "pad=" + size +
+                          ":(ow-iw)/2:(oh-ih)/2\" " +
+                          "-c:v mpeg4 " +
+                          "-q:v 2 " +
+                          "-c:a aac " +
+                          "-b:a 192k " +
+                          "\"" + output + "\"";
+
+                      FFmpegKit.executeAsync(
+                          command,
+                          session -> {
+
+                              if (ReturnCode.isSuccess(
+                                      session.getReturnCode())) {
+
+                                  com.getcapacitor.JSObject result =
+                                      new com.getcapacitor.JSObject();
+
+                                  result.put(
+                                      "uri",
+                                      outputFile.getAbsolutePath()
+                                  );
+
+                                  result.put(
+                                      "mode",
+                                      mode
+                                  );
+
+                                  result.put(
+                                      "fileName",
+                                      fileName
+                                  );
+
+                                  call.resolve(result);
+
+                              } else {
+
+                                  call.reject(
+                                      "FFmpeg processing failed. Code: " +
+                                      session.getReturnCode()
+                                  );
+                              }
+
+                              if (inputFile.exists()) {
+                                  inputFile.delete();
+                              }
+                          });
+
+                  } catch (Exception e) {
+
+                      call.reject(
+                          "Enhancement error: " +
+                          e.getMessage()
+                      );
+                  }
+              }
+          }
+          JAVA 
       - name: Patch MainActivity
         shell: bash
         run: |
