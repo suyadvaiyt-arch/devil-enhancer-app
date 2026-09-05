@@ -1,20 +1,20 @@
 {
   "name": "devil-enhancer-app",
   "version": "1.0.0",
-  "description": "Devil Enhancer — AI-Powered Video Enhancement (Capacitor Android wrapper)",
+  "private": true,
+  "description": "Devil Enhancer - premium video enhancement app UI built with Capacitor.",
   "scripts": {
-    "sync": "npx cap sync",
+    "start": "npx serve www",
+    "sync": "npx cap sync android",
     "open:android": "npx cap open android",
-    "build:apk": "cd android && ./gradlew assembleDebug"
+    "build:web": "mkdir -p dist && cp -r www/* dist/"
   },
   "dependencies": {
-    "@capacitor/android": "^6.0.0",
-    "@capacitor/core": "^6.0.0",
-    "@capacitor/filesystem": "^6.0.0",
-    "@capacitor/share": "^6.0.0",
-    "@capacitor/splash-screen": "^6.0.0"
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/core": "^7.4.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.0.0"
+    "@capacitor/cli": "^7.4.0",
+    "serve": "^14.2.4"
   }
 }
