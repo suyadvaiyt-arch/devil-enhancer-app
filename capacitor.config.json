@@ -1,0 +1,22 @@
+{
+  "appId": "com.devilenhancer.app",
+  "appName": "Devil Enhancer",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "backgroundColor": "#08080c",
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#08080c"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#08080c",
+      "showSpinner": false,
+      "androidSplashResourceName": "splash"
+    },
+    "Filesystem": {
+      "androidPublicStorage": true
+    }
+  }
+}

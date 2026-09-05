@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Devil Enhancer — Enhance. Repair. Upscale.</title>
+<style>
+  :root{
+    --radius-lg:22px; --radius-md:16px; --radius-sm:11px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: "SF Mono", Menlo, ui-monospace, monospace;
+    --red:#e0293e; --red-bright:#ff3b52; --red-deep:#8f0f22; --red-glow: rgba(224,41,62,0.35);
+    --gold:#e8b866; --green:#38c976; --amber:#e8a83c; --blue:#4a9eff;
+  }
+  html[data-theme="dark"]{
+    --bg:#0a0a0d; --bg-elevated:#111114; --surface: rgba(255,255,255,0.045); --surface-strong: rgba(255,255,255,0.08);
+    --border: rgba(255,255,255,0.09); --border-strong: rgba(255,255,255,0.16);
+    --text:#f2f1ee; --text-dim:#9b9aa2; --text-faint:#6a6970;
+    --overlay: rgba(0,0,0,0.55);
+    --page-glow: radial-gradient(1200px 600px at 15% -10%, rgba(224,41,62,0.14), transparent 60%), radial-gradient(900px 500px at 100% 0%, rgba(224,41,62,0.08), transparent 55%);
+  }
+  html[data-theme="light"]{
+    --bg:#f4f3f1; --bg-elevated:#ffffff; --surface: rgba(20,18,20,0.035); --surface-strong: rgba(20,18,20,0.06);
+    --border: rgba(20,18,20,0.09); --border-strong: rgba(20,18,20,0.16);
+    --text:#18161a; --text-dim:#5c5a60; --text-faint:#8b8890;
+    --overlay: rgba(20,18,20,0.35);
+    --page-glow: radial-gradient(1200px 600px at 15% -10%, rgba(224,41,62,0.08), transparent 60%), radial-gradient(900px 500px at 100% 0%, rgba(224,41,62,0.05), transparent 55%);
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; font-family:var(--font); background: var(--page-glow), var(--bg); color:var(--text);
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+    transition: background-color .25s ease, color .25s ease;
+    padding-bottom: calc(84px + var(--safe-bottom));
+  }
+  @media (min-width:900px){ body{ padding-bottom:32px; padding-left:236px; } }
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; scroll-behavior:auto !important; } }
+
+  ::selection{ background:var(--red-glow); color:#fff; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:8px; }
+  .visually-hidden{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  :focus-visible{ outline:2px solid var(--red-bright); outline-offset:2px; border-radius:6px; }
+  svg.icon{ width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex:none; display:block; }
+
+  /* =========================================================
+     TOP APP BAR
+  ========================================================= */
+  .topnav{
+    position:fixed; top:0; left:0; right:0; z-index:100; padding-top: var(--safe-top);
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    backdrop-filter: blur(22px) saturate(150%); -webkit-backdrop-filter: blur(22px) saturate(150%);
+    border-bottom:1px solid var(--border);
+  }
+  @media (min-width:900px){ .topnav{ left:220px; } }
+  .topnav-inner{ max-width:1180px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; padding:11px 18px; }
+  .brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .avatar{ width:32px; height:32px; border-radius:50%; object-fit:cover; flex:none; border:1.5px solid var(--border-strong); box-shadow:0 0 0 3px rgba(224,41,62,0.12); }
+  .brand-name{ font-size:16px; font-weight:650; letter-spacing:-0.01em; white-space:nowrap; }
+  .brand-name b{ color:var(--red-bright); font-weight:750; }
+  @media (min-width:900px){ .topnav .brand{ display:none; } }
+
+  .topnav-actions{ display:flex; align-items:center; gap:6px; }
+  .iconbtn{
+    width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--surface); border:1px solid var(--border); color:var(--text-dim); cursor:pointer;
+    transition: background .16s ease, color .16s ease, border-color .16s ease;
+  }
+  .iconbtn:hover{ color:var(--text); border-color:var(--border-strong); }
+  .iconbtn.active{ color:var(--red-bright); border-color:rgba(224,41,62,0.4); background:rgba(224,41,62,0.08); }
+
+  /* =========================================================
+     SIDEBAR (desktop) / BOTTOM TAB BAR (mobile)
+  ========================================================= */
+  .sidebar{
+    display:none;
+  }
+  @media (min-width:900px){
+    .sidebar{
+      display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0; width:220px; z-index:110;
+      padding: 22px 14px; border-right:1px solid var(--border); background: var(--bg-elevated);
+    }
+    .sidebar .brand{ display:flex; margin-bottom:30px; padding:0 8px; }
+    .sidebar-nav{ display:flex; flex-direction:column; gap:4px; }
+    .sidebar-link{
+      display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:12px; border:none; background:none;
+      color:var(--text-dim); font-size:14px; font-weight:580; cursor:pointer; text-align:left;
+    }
+    .sidebar-link:hover{ background:var(--surface); color:var(--text); }
+    .sidebar-link.active{ background:rgba(224,41,62,0.1); color:var(--red-bright); font-weight:640; }
+    .sidebar-foot{ margin-top:auto; padding:0 8px; font-size:10.5px; color:var(--text-faint); }
+  }
+
+  .tabbar{
+    position:fixed; left:0; right:0; bottom:0; z-index:100; display:flex;
+    padding-bottom: var(--safe-bottom);
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: blur(24px) saturate(150%); -webkit-backdrop-filter: blur(24px) saturate(150%);
+    border-top:1px solid var(--border);
+  }
+  @media (min-width:900px){ .tabbar{ display:none; } }
+  .tab{ flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 0 8px; background:none; border:none; color:var(--text-faint); font-size:10.5px; font-weight:600; }
+  .tab svg.icon{ width:21px; height:21px; }
+  .tab.active{ color:var(--red-bright); }
+
+  /* =========================================================
+     LAYOUT
+  ========================================================= */
+  .app{ max-width:1180px; margin:0 auto; padding: calc(64px + var(--safe-top)) 18px 40px; }
+  .page{ display:none; animation: pagein .3s cubic-bezier(.2,.8,.2,1); }
+  .page.active{ display:block; }
+  @keyframes pagein{ from{ opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  .desktop-grid{ display:block; }
+  @media (min-width:1040px){
+    .desktop-grid{ display:grid; grid-template-columns: 1fr 380px; gap:26px; align-items:start; }
+    .desktop-grid .col-main{ min-width:0; }
+    .desktop-grid .col-side{ position:sticky; top:88px; }
+  }
+
+  /* =========================================================
+     HERO
+  ========================================================= */
+  .hero{ padding: 30px 4px 8px; }
+  .hero-eyebrow{ display:flex; align-items:center; gap:8px; color:var(--red-bright); font-size:12.5px; font-weight:650; margin-bottom:14px; }
+  .hero-eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--red-bright); box-shadow:0 0 10px var(--red-bright); }
+  .hero h1{ font-size:clamp(26px, 5vw, 42px); line-height:1.08; letter-spacing:-0.02em; font-weight:700; margin:0 0 12px; max-width:640px; }
+  .hero p{ font-size:15.5px; line-height:1.55; color:var(--text-dim); max-width:520px; margin:0 0 24px; }
+
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+
+  /* =========================================================
+     UPLOAD ZONE
+  ========================================================= */
+  .upload-card{ padding:8px; margin-bottom:20px; }
+  .dropzone{
+    border:1.5px dashed var(--border-strong); border-radius:calc(var(--radius-lg) - 6px); padding:40px 20px;
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:13px; cursor:pointer;
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .dropzone.dragover{ border-color:var(--red-bright); background:rgba(224,41,62,0.06); }
+  .dropzone-icon{
+    width:56px; height:56px; border-radius:18px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(155deg, rgba(224,41,62,0.22), rgba(224,41,62,0.05)); border:1px solid rgba(224,41,62,0.3); color:var(--red-bright);
+  }
+  .dropzone h3{ margin:0; font-size:16.5px; font-weight:650; }
+  .dropzone p{ margin:0; font-size:13.5px; color:var(--text-faint); max-width:320px; }
+  .dropzone .formats{ font-size:11.5px; color:var(--text-faint); letter-spacing:.02em; }
+
+  .btn{
+    appearance:none; border:none; cursor:pointer; border-radius:100px; padding:12px 22px; font-size:14.5px; font-weight:620;
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    transition: transform .12s ease, box-shadow .2s ease, opacity .15s ease, background .18s ease;
+    white-space:nowrap;
+  }
+  .btn:active{ transform:scale(.965); }
+  .btn-primary{ background: linear-gradient(180deg, var(--red-bright), var(--red)); color:#fff; box-shadow: 0 8px 20px -6px rgba(224,41,62,0.55), inset 0 1px 0 rgba(255,255,255,0.18); }
+  .btn-primary:hover{ box-shadow:0 10px 26px -6px rgba(224,41,62,0.7), inset 0 1px 0 rgba(255,255,255,0.2); }
+  .btn-primary:disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; }
+  .btn-secondary{ background:var(--surface-strong); color:var(--text); border:1px solid var(--border-strong); }
+  .btn-secondary:hover{ background:var(--surface-strong); filter:brightness(1.15); }
+  .btn-ghost{ background:transparent; color:var(--text-dim); border:1px solid var(--border); }
+  .btn-ghost:hover{ color:var(--text); border-color:var(--border-strong); }
+  .btn-block{ width:100%; }
+  .btn-sm{ padding:8px 14px; font-size:12.5px; border-radius:10px; }
+  .btn-danger{ background:rgba(224,41,62,0.12); color:var(--red-bright); border:1px solid rgba(224,41,62,0.35); }
+  .btn-danger:hover{ background:rgba(224,41,62,0.2); }
+  input[type=file]{ display:none; }
+
+  .filepreview{ padding:16px; display:none; gap:16px; }
+  .filepreview.show{ display:flex; }
+  .filepreview .thumb-wrap{ width:112px; height:112px; border-radius:14px; overflow:hidden; flex:none; background:#000; position:relative; border:1px solid var(--border); }
+  .filepreview video{ width:100%; height:100%; object-fit:cover; }
+  .filepreview .meta{ flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; gap:6px; }
+  .filepreview .fname{ font-size:14.5px; font-weight:620; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .filemeta-row{ display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12.5px; color:var(--text-dim); }
+  .filemeta-row span b{ color:var(--text); font-weight:600; }
+  .filepreview .remove-x{ width:30px; height:30px; border-radius:50%; background:var(--surface-strong); border:1px solid var(--border); color:var(--text-dim); flex:none; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+
+  /* =========================================================
+     SECTIONS / OPTION CARDS
+  ========================================================= */
+  .section{ margin:28px 0; }
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; gap:10px; }
+  .section-head h2{ font-size:18px; font-weight:660; letter-spacing:-0.01em; margin:0; }
+  .section-head .hint{ font-size:12.5px; color:var(--text-faint); }
+
+  .opt-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:10px; }
+  .opt-card{ position:relative; padding:14px 14px 13px; border-radius:var(--radius-md); background:var(--surface); border:1px solid var(--border); cursor:pointer; transition: border-color .16s ease, background .16s ease, transform .1s ease; }
+  .opt-card:hover{ border-color:var(--border-strong); }
+  .opt-card:active{ transform:scale(.98); }
+  .opt-card.selected{ border-color:var(--red-bright); background:rgba(224,41,62,0.09); box-shadow:0 0 0 1px var(--red-bright) inset; }
+  .opt-card .opt-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .opt-card .opt-title{ font-size:14px; font-weight:640; }
+  .opt-card .opt-sub{ font-size:11.5px; color:var(--text-faint); line-height:1.4; }
+  .opt-card .check{ width:18px; height:18px; border-radius:50%; border:1.5px solid var(--border-strong); flex:none; display:flex; align-items:center; justify-content:center; color:transparent; transition:all .15s ease; }
+  .opt-card.selected .check{ background:var(--red-bright); border-color:var(--red-bright); color:#fff; }
+  .opt-card .check svg{ width:11px; height:11px; stroke-width:3; }
+  .badge{ font-size:9.5px; font-weight:700; letter-spacing:.03em; padding:3px 7px; border-radius:6px; background:linear-gradient(120deg, var(--gold), #b9863b); color:#241505; }
+
+  .res-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(100px,1fr)); gap:10px; }
+  .res-card{ text-align:center; padding:15px 8px; }
+  .res-card .opt-title{ font-size:14.5px; }
+  .res-card .opt-sub{ margin-top:2px; }
+
+  /* =========================================================
+     FPS
+  ========================================================= */
+  .fps-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(84px,1fr)); gap:8px; margin-bottom:14px; }
+  .fps-chip{ padding:10px 6px; text-align:center; border-radius:12px; background:var(--surface); border:1px solid var(--border); font-size:13px; font-weight:620; cursor:pointer; transition: all .15s ease; }
+  .fps-chip:hover{ border-color:var(--border-strong); }
+  .fps-chip.selected{ background:var(--red-bright); border-color:var(--red-bright); color:#fff; }
+  .fps-chip .fps-tag{ display:block; font-size:9.5px; font-weight:600; color:var(--amber); margin-top:2px; }
+  .fps-chip.selected .fps-tag{ color:#ffe1c9; }
+  .fps-custom{ display:flex; align-items:center; gap:10px; padding:12px 14px; }
+  .fps-custom label{ font-size:13px; color:var(--text-dim); font-weight:560; white-space:nowrap; }
+  .fps-custom input[type=number]{ flex:1; background:var(--bg-elevated); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:9px 12px; font-size:14px; font-family:inherit; min-width:0; }
+  .fps-custom input[type=number]:focus{ border-color:var(--red-bright); outline:none; }
+  .notice{ display:flex; gap:9px; align-items:flex-start; padding:11px 13px; border-radius:12px; background:rgba(232,168,60,0.08); border:1px solid rgba(232,168,60,0.28); font-size:12.5px; color:#c98c1e; line-height:1.5; margin-top:12px; }
+  html[data-theme="dark"] .notice{ color:#f0cd8f; }
+  .notice svg{ flex:none; margin-top:1px; color:var(--amber); }
+
+  /* =========================================================
+     PRESETS
+  ========================================================= */
+  .preset-row{ display:flex; gap:9px; overflow-x:auto; padding:2px 2px 8px; scrollbar-width:none; }
+  .preset-row::-webkit-scrollbar{ display:none; }
+  .preset-chip{ flex:none; display:flex; align-items:center; gap:7px; padding:10px 18px; border-radius:100px; background:var(--surface); border:1px solid var(--border); font-size:13.5px; font-weight:600; color:var(--text-dim); cursor:pointer; transition:all .15s ease; }
+  .preset-chip.selected{ background:var(--text); color:var(--bg); border-color:var(--text); }
+  .preset-chip.ff{ border-color:rgba(224,41,62,0.35); color:var(--red-bright); }
+  .preset-chip.ff.selected{ background:linear-gradient(180deg, var(--red-bright), var(--red)); color:#fff; border-color:var(--red-bright); }
+  .preset-chip svg{ width:15px; height:15px; }
+
+  .ff-banner{ display:none; align-items:center; gap:10px; padding:11px 14px; border-radius:12px; background:rgba(224,41,62,0.08); border:1px solid rgba(224,41,62,0.3); font-size:12.5px; color:var(--red-bright); font-weight:600; margin-top:10px; }
+  .ff-banner.show{ display:flex; }
+
+  /* =========================================================
+     ADVANCED SETTINGS
+  ========================================================= */
+  .adv-toggle{ display:flex; align-items:center; justify-content:space-between; padding:16px 18px; cursor:pointer; user-select:none; }
+  .adv-toggle .lbl{ display:flex; align-items:center; gap:10px; font-size:14.5px; font-weight:620; }
+  .adv-toggle .chev{ transition:transform .25s ease; color:var(--text-faint); }
+  .adv-body{ max-height:0; overflow:hidden; transition:max-height .35s ease; }
+  .adv-body-inner{ padding:4px 18px 20px; display:flex; flex-direction:column; gap:18px; }
+  .adv-open .adv-body{ max-height:1700px; }
+  .adv-open .chev{ transform:rotate(180deg); }
+
+  .slider-row{ display:flex; flex-direction:column; gap:8px; }
+  .slider-row .slabel{ display:flex; justify-content:space-between; font-size:13px; font-weight:560; color:var(--text-dim); }
+  .slider-row .slabel b{ color:var(--text); font-weight:650; font-variant-numeric:tabular-nums; }
+  input[type=range]{ -webkit-appearance:none; width:100%; height:5px; border-radius:4px; background:var(--surface-strong); outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.4), 0 0 0 4px rgba(224,41,62,0.25); cursor:pointer; margin-top:-6.5px; }
+  input[type=range]::-moz-range-thumb{ width:18px; height:18px; border-radius:50%; background:#fff; border:none; box-shadow:0 2px 8px rgba(0,0,0,0.4), 0 0 0 4px rgba(224,41,62,0.25); cursor:pointer; }
+
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; }
+  .toggle-row .tlabel{ font-size:13.5px; font-weight:560; }
+  .switch{ width:44px; height:26px; border-radius:100px; background:var(--surface-strong); border:1px solid var(--border-strong); position:relative; cursor:pointer; flex:none; transition:background .2s ease; }
+  .switch.on{ background:var(--red-bright); border-color:var(--red-bright); }
+  .switch .knob{ position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .2s cubic-bezier(.3,1,.4,1); box-shadow:0 1px 3px rgba(0,0,0,.4); }
+  .switch.on .knob{ left:20px; }
+
+  .seg-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .seg-btn{ padding:8px 15px; border-radius:10px; background:var(--surface); border:1px solid var(--border); font-size:12.5px; font-weight:600; color:var(--text-dim); cursor:pointer; }
+  .seg-btn.selected{ background:var(--surface-strong); color:var(--text); border-color:var(--border-strong); }
+
+  /* =========================================================
+     STICKY ACTION BAR
+  ========================================================= */
+  .actionbar{ position:sticky; bottom: calc(14px + var(--safe-bottom)); z-index:40; margin-top:24px; }
+  @media (max-width:899px){ .actionbar{ bottom: calc(84px + var(--safe-bottom)); } }
+  .actionbar-inner{ display:flex; align-items:center; gap:12px; padding:12px 14px; background:color-mix(in srgb, var(--bg-elevated) 88%, transparent); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid var(--border-strong); border-radius:20px; box-shadow:0 14px 40px -12px rgba(0,0,0,0.4); }
+  .actionbar .info{ flex:1; min-width:0; font-size:12px; color:var(--text-dim); line-height:1.4; }
+  .actionbar .info b{ color:var(--text); }
+
+  .demo-flag{ display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; letter-spacing:.02em; padding:3px 8px; border-radius:100px; background:rgba(74,158,255,0.15); color:#7cb4ff; border:1px solid rgba(74,158,255,.3); margin-left:6px; }
+
+  /* =========================================================
+     PROCESSING SCREEN
+  ========================================================= */
+  .proc-wrap{ padding:36px 22px 28px; text-align:center; }
+  .proc-ring-wrap{ position:relative; width:148px; height:148px; margin:0 auto 20px; }
+  .proc-ring-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
+  .proc-ring-bg{ fill:none; stroke:var(--surface-strong); stroke-width:8; }
+  .proc-ring-fg{ fill:none; stroke:url(#ringGrad); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset .4s ease; }
+  .proc-pct{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:27px; font-weight:700; letter-spacing:-0.02em; }
+  .proc-title{ font-size:19px; font-weight:660; margin:0 0 6px; }
+  .proc-stage{ font-size:13.5px; color:var(--red-bright); font-weight:600; margin-bottom:20px; min-height:18px; }
+
+  .proc-stats{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; max-width:420px; margin:0 auto 20px; text-align:left; }
+  .proc-stat{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:11px 13px; }
+  .proc-stat .k{ font-size:10.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
+  .proc-stat .v{ font-size:14px; font-weight:640; font-variant-numeric:tabular-nums; }
+  .proc-stat .v .arrow{ color:var(--text-faint); margin:0 4px; }
+  .proc-stat .v .to{ color:var(--red-bright); }
+
+  .stagelist{ max-width:340px; margin:0 auto; text-align:left; display:flex; flex-direction:column; gap:2px; }
+  .stageitem{ display:flex; align-items:center; gap:10px; padding:6px 4px; font-size:12.5px; color:var(--text-faint); }
+  .stageitem .dot{ width:16px; height:16px; border-radius:50%; border:1.5px solid var(--border-strong); flex:none; display:flex; align-items:center; justify-content:center; font-size:9px; }
+  .stageitem.active{ color:var(--text); font-weight:600; }
+  .stageitem.active .dot{ border-color:var(--red-bright); box-shadow:0 0 8px var(--red-glow); }
+  .stageitem.active .dot::after{ content:''; width:7px; height:7px; border-radius:50%; background:var(--red-bright); animation:pulse 1s infinite ease-in-out; }
+  .stageitem.complete{ color:var(--text-dim); }
+  .stageitem.complete .dot{ background:var(--green); border-color:var(--green); color:#04220f; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+
+  .compare-wrap{ display:none; margin-top:22px; }
+  .compare-wrap.show{ display:block; }
+  .compare-head{ display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px; }
+  .compare-head .pill{ font-size:12px; font-weight:650; padding:6px 14px; border-radius:100px; background:var(--surface-strong); color:var(--text-dim); }
+  .compare-head .pill.right{ background:linear-gradient(90deg, rgba(224,41,62,.25), rgba(224,41,62,.1)); color:var(--red-bright); }
+  .compare-slider{ position:relative; width:100%; aspect-ratio:16/9; max-width:640px; margin:0 auto; border-radius:16px; overflow:hidden; border:1px solid var(--border-strong); background:#000; }
+  .compare-slider video, .compare-slider .compare-fill{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .compare-fill{ overflow:hidden; width:50%; border-right:2px solid var(--red-bright); }
+  .compare-fill video{ width:calc(1px * var(--vw, 640)); max-width:none; }
+  .compare-handle{ position:absolute; top:0; bottom:0; left:50%; width:0; z-index:5; }
+  .compare-handle .grip{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:38px; height:38px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; color:#111; box-shadow:0 4px 14px rgba(0,0,0,.4); cursor:ew-resize; }
+  .compare-tag{ position:absolute; top:10px; font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px; background:rgba(0,0,0,0.55); backdrop-filter:blur(6px); letter-spacing:.03em; color:#fff; }
+  .compare-tag.e{ right:10px; color:var(--red-bright); }
+  .compare-tag.o{ left:10px; }
+
+  .ready-banner{ text-align:center; margin-top:24px; }
+  .ready-banner .check-circle{ width:56px; height:56px; border-radius:50%; margin:0 auto 14px; background:radial-gradient(circle, rgba(56,201,118,0.25), transparent 70%); display:flex; align-items:center; justify-content:center; color:var(--green); border:1.5px solid rgba(56,201,118,.4); }
+  .ready-banner h3{ margin:0 0 6px; font-size:19px; font-weight:660; }
+  .ready-banner p{ margin:0 0 20px; color:var(--text-dim); font-size:13.5px; }
+  .ready-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+  /* =========================================================
+     TASKS PAGE
+  ========================================================= */
+  .filter-row{ display:flex; gap:8px; margin-bottom:18px; overflow-x:auto; }
+  .filter-chip{ flex:none; padding:8px 16px; border-radius:100px; background:var(--surface); border:1px solid var(--border); font-size:13px; font-weight:600; color:var(--text-dim); cursor:pointer; }
+  .filter-chip.selected{ background:var(--text); color:var(--bg); border-color:var(--text); }
+
+  .task-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:14px; }
+  .task-card{ padding:14px; display:flex; flex-direction:column; gap:12px; animation:pagein .3s ease; }
+  .task-thumb{ position:relative; width:100%; aspect-ratio:16/9; border-radius:12px; overflow:hidden; background:linear-gradient(135deg, var(--surface-strong), var(--surface)); display:flex; align-items:center; justify-content:center; color:var(--text-faint); }
+  .task-thumb video{ width:100%; height:100%; object-fit:cover; }
+  .status-pill{ position:absolute; top:8px; left:8px; font-size:10px; font-weight:700; letter-spacing:.03em; padding:4px 9px; border-radius:100px; backdrop-filter:blur(6px); text-transform:capitalize; }
+  .status-pill.processing{ background:rgba(74,158,255,0.25); color:#a9d1ff; border:1px solid rgba(74,158,255,.4); }
+  .status-pill.completed{ background:rgba(56,201,118,0.22); color:#a6f0c6; border:1px solid rgba(56,201,118,.4); }
+  .status-pill.failed{ background:rgba(224,41,62,0.25); color:#ffb3bd; border:1px solid rgba(224,41,62,.4); }
+  .status-pill.queued{ background:rgba(232,168,60,0.2); color:#f3d8a1; border:1px solid rgba(232,168,60,.4); }
+  .task-title{ font-size:14.5px; font-weight:640; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .task-meta{ display:flex; flex-wrap:wrap; gap:5px 12px; font-size:11.5px; color:var(--text-faint); }
+  .task-meta b{ color:var(--text-dim); font-weight:600; }
+  .task-progress-mini{ height:4px; border-radius:4px; background:var(--surface-strong); overflow:hidden; }
+  .task-progress-mini .fill{ height:100%; background:linear-gradient(90deg,var(--red),var(--red-bright)); transition:width .3s ease; }
+  .task-actions{ display:flex; gap:8px; }
+  .task-actions .btn{ flex:1; }
+
+  .empty-state{ text-align:center; padding:64px 20px; color:var(--text-faint); }
+  .empty-state .ic{ width:52px; height:52px; margin:0 auto 16px; color:var(--text-faint); opacity:.7; }
+  .empty-state h3{ color:var(--text); font-size:16px; margin:0 0 6px; }
+  .empty-state p{ font-size:13px; margin:0 0 20px; }
+
+  .skeleton-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:14px; }
+  .skel-card{ padding:14px; border-radius:var(--radius-lg); background:var(--surface); border:1px solid var(--border); }
+  .skel-block{ border-radius:12px; background: linear-gradient(90deg, var(--surface-strong) 25%, var(--border-strong) 37%, var(--surface-strong) 63%); background-size:400% 100%; animation:shimmer 1.4s ease infinite; }
+  .skel-thumb{ width:100%; aspect-ratio:16/9; margin-bottom:12px; }
+  .skel-line{ height:11px; margin-bottom:8px; width:70%; }
+  .skel-line.short{ width:40%; }
+  @keyframes shimmer{ 0%{ background-position:100% 0; } 100%{ background-position:0 0; } }
+
+  /* =========================================================
+     SETTINGS PAGE
+  ========================================================= */
+  .settings-group{ margin-bottom:26px; }
+  .settings-group h3{ font-size:12.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); font-weight:700; margin:0 0 10px; padding:0 4px; }
+  .settings-list{ overflow:hidden; }
+  .settings-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:15px 16px; border-bottom:1px solid var(--border); }
+  .settings-row:last-child{ border-bottom:none; }
+  .settings-row .lbl{ font-size:14px; font-weight:580; }
+  .settings-row .desc{ font-size:11.5px; color:var(--text-faint); margin-top:2px; }
+  .settings-row select{ background:var(--surface-strong); border:1px solid var(--border-strong); color:var(--text); padding:8px 12px; border-radius:10px; font-size:13px; font-family:inherit; }
+  .theme-seg{ display:flex; gap:6px; background:var(--surface-strong); padding:4px; border-radius:12px; }
+  .theme-seg button{ padding:7px 13px; border-radius:9px; border:none; background:none; color:var(--text-dim); font-size:12.5px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .theme-seg button.selected{ background:var(--bg-elevated); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.15); }
+  .about-card{ padding:22px; text-align:center; }
+  .about-card .logo-ic{ width:48px; height:48px; border-radius:16px; margin:0 auto 12px; background:linear-gradient(155deg, var(--red-bright), var(--red-deep)); display:flex; align-items:center; justify-content:center; color:#fff; }
+  .about-card h4{ margin:0 0 3px; font-size:16px; }
+  .about-card p{ margin:0; font-size:12.5px; color:var(--text-faint); }
+  .about-card .ver{ margin-top:10px; font-size:11px; color:var(--text-faint); font-family:var(--font-mono); }
+
+  /* =========================================================
+     TOASTS / MODAL
+  ========================================================= */
+  .toast-stack{ position:fixed; top:calc(70px + var(--safe-top)); left:50%; transform:translateX(-50%); z-index:999; display:flex; flex-direction:column; gap:8px; width:min(380px, 92vw); }
+  @media (min-width:900px){ .toast-stack{ left:calc(50% + 110px); } }
+  .toast{ display:flex; align-items:flex-start; gap:10px; padding:13px 15px; border-radius:15px; background:color-mix(in srgb, var(--bg-elevated) 92%, transparent); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid var(--border-strong); box-shadow:0 16px 40px -10px rgba(0,0,0,.35); animation: toastin .32s cubic-bezier(.2,.9,.25,1); font-size:13.5px; line-height:1.4; }
+  @keyframes toastin{ from{ opacity:0; transform:translateY(-14px) scale(.96);} to{opacity:1; transform:none;} }
+  .toast.leaving{ animation: toastout .25s ease forwards; }
+  @keyframes toastout{ to{ opacity:0; transform:translateY(-10px) scale(.97); } }
+  .toast .ic{ flex:none; margin-top:1px; }
+  .toast.error .ic{ color:var(--red-bright); }
+  .toast.success .ic{ color:var(--green); }
+  .toast.info .ic{ color:var(--blue); }
+  .toast .msg b{ display:block; font-weight:650; margin-bottom:1px; }
+  .toast .msg span{ color:var(--text-dim); }
+  .toast .close{ background:none; border:none; color:var(--text-faint); cursor:pointer; padding:2px; }
+
+  .modal-overlay{ position:fixed; inset:0; background:var(--overlay); backdrop-filter:blur(4px); z-index:200; display:none; align-items:flex-end; justify-content:center; }
+  .modal-overlay.show{ display:flex; animation:fadein .2s ease; }
+  @keyframes fadein{ from{opacity:0;} to{opacity:1;} }
+  @media (min-width:640px){ .modal-overlay{ align-items:center; } }
+  .modal{ width:100%; max-width:420px; background:var(--bg-elevated); border:1px solid var(--border-strong); border-radius:24px 24px 0 0; padding:22px 20px calc(24px + var(--safe-bottom)); animation: modalup .28s cubic-bezier(.2,.9,.25,1); }
+  @media (min-width:640px){ .modal{ border-radius:22px; padding:24px; } }
+  @keyframes modalup{ from{ transform:translateY(30px); opacity:0;} to{transform:none; opacity:1;} }
+  .modal h3{ margin:0 0 8px; font-size:17px; font-weight:660; }
+  .modal p{ margin:0 0 18px; font-size:13.5px; color:var(--text-dim); line-height:1.5; }
+  .modal .modal-actions{ display:flex; gap:10px; }
+
+  .config-note{ font-size:11.5px; color:var(--text-faint); padding:10px 2px 0; }
+  .config-note code{ background:var(--surface-strong); padding:2px 6px; border-radius:6px; font-family:var(--font-mono); color:var(--text-dim); }
+  .footer-note{ text-align:center; font-size:11.5px; color:var(--text-faint); margin-top:32px; padding-bottom:8px; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     ICON SPRITE (SVG symbols reused across the app)
+============================================================ -->
+<svg class="visually-hidden" aria-hidden="true">
+  <symbol id="ic-home" viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9"/></symbol>
+  <symbol id="ic-tasks" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></symbol>
+  <symbol id="ic-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V19.6a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H4.4a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H10.5a1.7 1.7 0 0 0 1-1.55V4.4a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V10.5a1.7 1.7 0 0 0 1.55 1h.09a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z"/></symbol>
+  <symbol id="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7"/></symbol>
+  <symbol id="ic-moon" viewBox="0 0 24 24"><path d="M20.5 14.7A8.5 8.5 0 1 1 9.3 3.5a7 7 0 0 0 11.2 11.2Z"/></symbol>
+  <symbol id="ic-monitor" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/></symbol>
+  <symbol id="ic-upload" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6.5"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24"><path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/></symbol>
+  <symbol id="ic-download" viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4"/><path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></symbol>
+  <symbol id="ic-play" viewBox="0 0 24 24"><path d="M7 5.5v13l11-6.5-11-6.5Z"/></symbol>
+  <symbol id="ic-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="ic-alert" viewBox="0 0 24 24"><path d="M12 4 21.5 20H2.5L12 4Z"/><path d="M12 10v4M12 17h.01"/></symbol>
+  <symbol id="ic-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.5h.01"/></symbol>
+  <symbol id="ic-empty" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M4 7l3.5-3.5h9L20 7M9 12h6"/></symbol>
+  <symbol id="ic-gamepad" viewBox="0 0 24 24"><rect x="2.5" y="8" width="19" height="9" rx="4"/><path d="M7.5 10.5v4M5.5 12.5h4M16 12h.01M18.5 10.5h.01"/></symbol>
+  <symbol id="ic-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+</svg>
+
+<!-- ============================================================
+     TOP APP BAR
+============================================================ -->
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="brand">
+      <img class="avatar" src="https://i.postimg.cc/59h9xKvW/image.png" alt="Devil Enhancer profile" />
+      <span class="brand-name"><b>Devil</b> Enhancer</span>
+    </div>
+    <div style="flex:1;"></div>
+    <div class="topnav-actions">
+      <button class="iconbtn" id="quickThemeBtn" aria-label="Toggle theme" title="Toggle theme"><svg class="icon" id="quickThemeIcon"><use href="#ic-moon"/></svg></button>
+      <button class="iconbtn" id="settingsBtn" aria-label="Open settings" title="Settings"><svg class="icon"><use href="#ic-settings"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<!-- Desktop sidebar -->
+<aside class="sidebar">
+  <div class="brand">
+    <img class="avatar" src="https://i.postimg.cc/59h9xKvW/image.png" alt="Devil Enhancer profile" />
+    <span class="brand-name"><b>Devil</b> Enhancer</span>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="sidebar-link active" data-page="home"><svg class="icon"><use href="#ic-home"/></svg>Home</button>
+    <button class="sidebar-link" data-page="tasks"><svg class="icon"><use href="#ic-tasks"/></svg>View Tasks</button>
+    <button class="sidebar-link" data-page="settings"><svg class="icon"><use href="#ic-settings"/></svg>Settings</button>
+  </nav>
+  <div class="sidebar-foot">Devil Enhancer v1.0<br>Enhance. Repair. Upscale.</div>
+</aside>
+
+<!-- Mobile bottom tab bar -->
+<div class="tabbar">
+  <button class="tab active" data-page="home"><svg class="icon"><use href="#ic-home"/></svg>Home</button>
+  <button class="tab" data-page="tasks"><svg class="icon"><use href="#ic-tasks"/></svg>Tasks</button>
+  <button class="tab" data-page="settings"><svg class="icon"><use href="#ic-settings"/></svg>Settings</button>
+</div>
+
+<!-- Toasts -->
+<div class="toast-stack" id="toastStack"></div>
+
+<!-- ============================================================
+     APP
+============================================================ -->
+<div class="app">
+
+  <!-- ============================= HOME PAGE ============================= -->
+  <section class="page active" id="page-home">
+
+    <div class="hero">
+      <div class="hero-eyebrow"><span class="dot"></span>AI-POWERED VIDEO ENHANCEMENT</div>
+      <h1>Enhance your gameplay videos</h1>
+      <p>Upscale, repair, sharpen and boost FPS with AI-powered video enhancement — tuned for Free Fire gameplay, and just as capable on any video.</p>
+    </div>
+
+    <div class="desktop-grid">
+      <div class="col-main">
+
+        <!-- Upload card -->
+        <div class="card upload-card">
+          <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose or drop a video">
+            <div class="dropzone-icon"><svg class="icon" style="width:26px;height:26px;"><use href="#ic-upload"/></svg></div>
+            <h3>Drop your video here</h3>
+            <p>or tap below to browse your device. Nothing uploads until you start enhancement.</p>
+            <button class="btn btn-primary" id="chooseBtn" type="button">Choose Video</button>
+            <div class="formats">MP4 · MOV · WEBM · MKV — up to 2GB</div>
+            <input type="file" id="fileInput" accept="video/mp4,video/quicktime,video/webm,video/x-matroska,.mp4,.mov,.webm,.mkv" />
+          </div>
+
+          <div class="filepreview" id="filePreview">
+            <div class="thumb-wrap"><video id="previewVideo" muted playsinline></video></div>
+            <div class="meta">
+              <div class="fname" id="fname">—</div>
+              <div class="filemeta-row">
+                <span>Size: <b id="fsize">—</b></span>
+                <span>Duration: <b id="fduration">—</b></span>
+                <span>Resolution: <b id="fresolution">—</b></span>
+                <span>FPS: <b id="ffps">—</b></span>
+                <span>Format: <b id="fformat">—</b></span>
+              </div>
+            </div>
+            <button class="remove-x" id="removeFile" title="Remove video" aria-label="Remove video"><svg class="icon" style="width:14px;height:14px;"><use href="#ic-close"/></svg></button>
+          </div>
+        </div>
+
+        <!-- Settings — only shown once a file is chosen -->
+        <div id="settingsArea" style="display:none;">
+
+          <div class="section">
+            <div class="section-head"><h2>Quality Presets</h2><span class="hint">Tap to auto-configure</span></div>
+            <div class="preset-row" id="presetRow">
+              <div class="preset-chip" data-preset="fast">Fast</div>
+              <div class="preset-chip" data-preset="balanced">Balanced</div>
+              <div class="preset-chip selected" data-preset="high">High Quality</div>
+              <div class="preset-chip" data-preset="ultra">Ultra Quality</div>
+              <div class="preset-chip" data-preset="maximum">Maximum Quality</div>
+              <div class="preset-chip ff" data-preset="freefire"><svg class="icon"><use href="#ic-gamepad"/></svg>Free Fire Gaming</div>
+            </div>
+            <div class="ff-banner" id="ffBanner"><svg class="icon" style="width:16px;height:16px;"><use href="#ic-gamepad"/></svg>Free Fire Optimized — HUD sharpening, artifact reduction &amp; motion clarity tuned for gameplay.</div>
+          </div>
+
+          <div class="section">
+            <div class="section-head"><h2>Resolution</h2></div>
+            <div class="res-grid" id="resGrid">
+              <div class="opt-card res-card" data-res="original"><div class="opt-title">Original</div><div class="opt-sub">No change</div></div>
+              <div class="opt-card res-card" data-res="720p"><div class="opt-title">720p</div><div class="opt-sub">HD</div></div>
+              <div class="opt-card res-card" data-res="1080p"><div class="opt-title">1080p</div><div class="opt-sub">Full HD</div></div>
+              <div class="opt-card res-card selected" data-res="2k"><div class="opt-title">2K</div><div class="opt-sub">QHD</div></div>
+              <div class="opt-card res-card" data-res="4k"><div class="opt-title">4K <span class="badge">PRO</span></div><div class="opt-sub">Ultra HD</div></div>
+              <div class="opt-card res-card" data-res="8k"><div class="opt-title">8K <span class="badge">PRO</span></div><div class="opt-sub">Max detail</div></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head"><h2>Enhancement Modes</h2><span class="hint">Select one or more</span></div>
+            <div class="opt-grid" id="modeGrid">
+              <div class="opt-card selected" data-mode="ultrahd">
+                <div class="opt-top"><span class="opt-title">Ultra HD</span><span class="check"><svg class="icon" style="width:11px;height:11px;stroke-width:3;"><use href="#ic-check"/></svg></span></div>
+                <div class="opt-sub">Enhance sharpness, details and perceived resolution</div>
+              </div>
+              <div class="opt-card" data-mode="repair">
+                <div class="opt-top"><span class="opt-title">AI Repair</span><span class="check"><svg class="icon" style="width:11px;height:11px;stroke-width:3;"><use href="#ic-check"/></svg></span></div>
+                <div class="opt-sub">Reduce noise, compression artifacts, blur and damage</div>
+              </div>
+              <div class="opt-card" data-mode="superres">
+                <div class="opt-top"><span class="opt-title">Super Resolution</span><span class="check"><svg class="icon" style="width:11px;height:11px;stroke-width:3;"><use href="#ic-check"/></svg></span></div>
+                <div class="opt-sub">AI-assisted resolution enhancement</div>
+              </div>
+              <div class="opt-card" data-mode="detail">
+                <div class="opt-top"><span class="opt-title">Detail Boost</span><span class="check"><svg class="icon" style="width:11px;height:11px;stroke-width:3;"><use href="#ic-check"/></svg></span></div>
+                <div class="opt-sub">Recover and improve fine details</div>
+              </div>
+              <div class="opt-card" data-mode="color">
+                <div class="opt-top"><span class="opt-title">Color Enhance</span><span class="check"><svg class="icon" style="width:11px;height:11px;stroke-width:3;"><use href="#ic-check"/></svg></span></div>
+                <div class="opt-sub">Improve contrast, color and overall image quality</div>
+              </div>
+              <div class="opt-card" data-mode="face">
+                <div class="opt-top"><span class="opt-title">Face Enhance</span><span class="check"><svg class="icon" style="width:11px;height:11px;stroke-width:3;"><use href="#ic-check"/></svg></span></div>
+                <div class="opt-sub">Improve faces and important visual details</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head"><h2>FPS Boost</h2><span class="hint">Frame interpolation</span></div>
+            <div class="fps-grid" id="fpsGrid"></div>
+            <div class="card fps-custom">
+              <label for="fpsCustom">Custom</label>
+              <input type="number" id="fpsCustom" min="30" max="1920" placeholder="Enter 30–1920" />
+              <span style="font-size:12.5px;color:var(--text-faint);">FPS</span>
+            </div>
+            <div class="notice"><svg class="icon" style="width:16px;height:16px;"><use href="#ic-alert"/></svg><span>High FPS output requires frame interpolation and may depend on the processing engine and source video. A 30 FPS clip cannot become true 1920 FPS without real frame-generation processing.</span></div>
+          </div>
+
+          <div class="section">
+            <div class="card" id="advPanel">
+              <div class="adv-toggle" id="advToggle">
+                <span class="lbl"><svg class="icon"><use href="#ic-settings"/></svg>Advanced Settings</span>
+                <span class="chev"><svg class="icon" style="width:16px;height:16px;"><use href="#ic-chevron"/></svg></span>
+              </div>
+              <div class="adv-body">
+                <div class="adv-body-inner">
+                  <div class="slider-row"><div class="slabel"><span>AI Strength</span><b id="v_aistrength">70%</b></div><input type="range" id="s_aistrength" min="0" max="100" value="70"></div>
+                  <div class="slider-row"><div class="slabel"><span>Sharpness</span><b id="v_sharpness">55%</b></div><input type="range" id="s_sharpness" min="0" max="100" value="55"></div>
+                  <div class="slider-row"><div class="slabel"><span>Denoise</span><b id="v_denoise">50%</b></div><input type="range" id="s_denoise" min="0" max="100" value="50"></div>
+                  <div class="slider-row"><div class="slabel"><span>Detail Recovery</span><b id="v_detail">60%</b></div><input type="range" id="s_detail" min="0" max="100" value="60"></div>
+                  <div class="slider-row"><div class="slabel"><span>Deblur</span><b id="v_deblur">40%</b></div><input type="range" id="s_deblur" min="0" max="100" value="40"></div>
+                  <div class="slider-row"><div class="slabel"><span>Artifact Removal</span><b id="v_artifact">45%</b></div><input type="range" id="s_artifact" min="0" max="100" value="45"></div>
+                  <div class="slider-row"><div class="slabel"><span>Contrast</span><b id="v_contrast">50%</b></div><input type="range" id="s_contrast" min="0" max="100" value="50"></div>
+                  <div class="slider-row"><div class="slabel"><span>Saturation</span><b id="v_saturation">50%</b></div><input type="range" id="s_saturation" min="0" max="100" value="50"></div>
+                  <div class="slider-row"><div class="slabel"><span>HDR Enhancement</span><b id="v_hdr">30%</b></div><input type="range" id="s_hdr" min="0" max="100" value="30"></div>
+
+                  <div class="toggle-row"><span class="tlabel">Motion Smoothing</span><div class="switch on" id="t_motionsmooth"><div class="knob"></div></div></div>
+                  <div class="toggle-row"><span class="tlabel">Frame Interpolation</span><div class="switch on" id="t_frameinterp"><div class="knob"></div></div></div>
+
+                  <div class="slider-row"><div class="slabel"><span>Bitrate</span><b id="v_bitrate">12 Mbps</b></div><input type="range" id="s_bitrate" min="2" max="80" value="12"></div>
+                  <div class="slider-row"><div class="slabel"><span>Overall Quality</span><b id="v_quality">75%</b></div><input type="range" id="s_quality" min="0" max="100" value="75"></div>
+
+                  <div>
+                    <div class="slabel" style="margin-bottom:8px;"><span>Output Format</span></div>
+                    <div class="seg-row" id="formatRow">
+                      <div class="seg-btn selected" data-format="mp4">MP4</div>
+                      <div class="seg-btn" data-format="webm">WEBM</div>
+                      <div class="seg-btn" data-format="mov">MOV</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Processing / result card (mobile flow; mirrored in sidebar on desktop) -->
+          <div class="card" id="procCard" style="display:none; margin-top:24px;">
+            <div class="proc-wrap" id="procRunning">
+              <div class="proc-ring-wrap">
+                <svg viewBox="0 0 120 120">
+                  <defs><linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff3b52"/><stop offset="100%" stop-color="#8f0f22"/></linearGradient></defs>
+                  <circle class="proc-ring-bg" cx="60" cy="60" r="52"></circle>
+                  <circle class="proc-ring-fg" id="procRing" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="326.7"></circle>
+                </svg>
+                <div class="proc-pct" id="procPct">0%</div>
+              </div>
+              <h3 class="proc-title">Enhancing Your Video</h3>
+              <div class="proc-stage" id="procStageLabel">Preparing…</div>
+              <div class="proc-stats">
+                <div class="proc-stat"><div class="k">Resolution</div><div class="v" id="statRes">—<span class="arrow">→</span><span class="to" id="statResTo">—</span></div></div>
+                <div class="proc-stat"><div class="k">Frame Rate</div><div class="v" id="statFps">—<span class="arrow">→</span><span class="to" id="statFpsTo">—</span></div></div>
+                <div class="proc-stat"><div class="k">Elapsed</div><div class="v" id="statElapsed">0:00</div></div>
+                <div class="proc-stat"><div class="k">Est. Remaining</div><div class="v" id="statRemaining">—</div></div>
+              </div>
+              <div class="stagelist" id="stageList"></div>
+            </div>
+
+            <div class="ready-banner" id="readyBanner" style="display:none;">
+              <div class="check-circle"><svg class="icon" style="width:26px;height:26px;"><use href="#ic-check"/></svg></div>
+              <h3>Enhancement Complete</h3>
+              <p>Your enhanced video is ready!</p>
+              <div class="ready-actions">
+                <button class="btn btn-secondary" id="btnPreviewResult"><svg class="icon" style="width:15px;height:15px;"><use href="#ic-play"/></svg>Preview</button>
+                <button class="btn btn-primary" id="btnDownloadResult"><svg class="icon" style="width:15px;height:15px;"><use href="#ic-download"/></svg>Download Video</button>
+                <button class="btn btn-ghost" id="btnSaveDevice">Save to Device</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="compare-wrap" id="compareWrap">
+            <div class="compare-head"><span class="pill">Original</span><span class="pill right">Enhanced</span></div>
+            <div class="compare-slider" id="compareSlider">
+              <video id="cmpBase" muted loop playsinline></video>
+              <div class="compare-fill" id="cmpFill"><video id="cmpOverlay" muted loop playsinline></video></div>
+              <div class="compare-handle" id="cmpHandle"><div class="grip">↔</div></div>
+              <span class="compare-tag o">ORIGINAL</span>
+              <span class="compare-tag e">ENHANCED</span>
+            </div>
+          </div>
+
+          <div class="config-note">Demo Mode — connect an AI processing server for real video enhancement. Set <code>DevilEnhancerAPI.baseURL</code> in the source to go live.</div>
+        </div>
+
+        <div class="footer-note">Devil Enhancer · Enhance. Repair. Upscale.</div>
+      </div>
+
+      <div class="col-side" id="sideActionCol">
+        <!-- Sticky action bar lives here on desktop via CSS grid, and inline on mobile -->
+      </div>
+    </div>
+
+    <!-- Sticky action bar -->
+    <div class="actionbar" id="actionbar" style="display:none;">
+      <div class="actionbar-inner">
+        <div class="info" id="actionInfo"><b>Ready to enhance.</b><span class="demo-flag"><svg class="icon" style="width:10px;height:10px;"><use href="#ic-info"/></svg>DEMO MODE</span></div>
+        <button class="btn btn-primary" id="startBtn">Start Enhancement</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= TASKS PAGE ============================= -->
+  <section class="page" id="page-tasks">
+    <div class="section-head" style="margin:26px 0 16px;">
+      <h2 style="font-size:22px;">Your Projects</h2>
+      <span class="hint" id="taskCount">0 projects</span>
+    </div>
+
+    <div class="filter-row" id="filterRow">
+      <div class="filter-chip selected" data-filter="all">All</div>
+      <div class="filter-chip" data-filter="queued">Queued</div>
+      <div class="filter-chip" data-filter="processing">Processing</div>
+      <div class="filter-chip" data-filter="completed">Completed</div>
+      <div class="filter-chip" data-filter="failed">Failed</div>
+    </div>
+
+    <div class="skeleton-grid" id="skeletonGrid" style="display:none;">
+      <div class="skel-card"><div class="skel-block skel-thumb"></div><div class="skel-block skel-line"></div><div class="skel-block skel-line short"></div></div>
+      <div class="skel-card"><div class="skel-block skel-thumb"></div><div class="skel-block skel-line"></div><div class="skel-block skel-line short"></div></div>
+      <div class="skel-card"><div class="skel-block skel-thumb"></div><div class="skel-block skel-line"></div><div class="skel-block skel-line short"></div></div>
+    </div>
+
+    <div class="task-grid" id="taskGrid"></div>
+
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <svg class="icon ic" style="width:52px;height:52px;"><use href="#ic-empty"/></svg>
+      <h3>No projects yet</h3>
+      <p>Your enhanced videos will appear here.</p>
+      <button class="btn btn-primary" id="emptyCta">Enhance Your First Video</button>
+    </div>
+  </section>
+
+  <!-- ============================= SETTINGS PAGE ============================= -->
+  <section class="page" id="page-settings">
+    <div class="section-head" style="margin:26px 0 16px;"><h2 style="font-size:22px;">Settings</h2></div>
+
+    <div class="settings-group">
+      <h3>Theme</h3>
+      <div class="card settings-list">
+        <div class="settings-row">
+          <div><div class="lbl">Appearance</div><div class="desc">Choose how Devil Enhancer looks</div></div>
+          <div class="theme-seg" id="themeSeg">
+            <button data-theme="dark"><svg class="icon" style="width:14px;height:14px;"><use href="#ic-moon"/></svg>Dark</button>
+            <button data-theme="light"><svg class="icon" style="width:14px;height:14px;"><use href="#ic-sun"/></svg>Light</button>
+            <button data-theme="system"><svg class="icon" style="width:14px;height:14px;"><use href="#ic-monitor"/></svg>System</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3>Processing Defaults</h3>
+      <div class="card settings-list">
+        <div class="settings-row">
+          <div><div class="lbl">Default resolution</div></div>
+          <select id="defResolution">
+            <option value="original">Original</option>
+            <option value="720p">720p</option>
+            <option value="1080p">1080p</option>
+            <option value="2k" selected>2K</option>
+            <option value="4k">4K</option>
+            <option value="8k">8K</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <div><div class="lbl">Default FPS</div></div>
+          <select id="defFps">
+            <option value="30">30</option>
+            <option value="60" selected>60</option>
+            <option value="90">90</option>
+            <option value="120">120</option>
+            <option value="144">144</option>
+            <option value="240">240</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <div><div class="lbl">Default quality preset</div></div>
+          <select id="defPreset">
+            <option value="fast">Fast</option>
+            <option value="balanced">Balanced</option>
+            <option value="high" selected>High Quality</option>
+            <option value="ultra">Ultra Quality</option>
+            <option value="maximum">Maximum Quality</option>
+            <option value="freefire">Free Fire Gaming</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3>Storage</h3>
+      <div class="card settings-list">
+        <div class="settings-row">
+          <div><div class="lbl">Clear task history</div><div class="desc">Removes all project metadata from this device</div></div>
+          <button class="btn btn-danger btn-sm" id="clearHistoryBtn">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <h3>About</h3>
+      <div class="card about-card">
+        <div class="logo-ic"><svg class="icon" style="width:24px;height:24px;color:#fff;"><use href="#ic-upload"/></svg></div>
+        <h4>Devil Enhancer</h4>
+        <p>AI Video Enhancement — Enhance. Repair. Upscale.</p>
+        <div class="ver">Version 1.0</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <h3>Delete this project?</h3>
+    <p>This removes the project and its stored result from this device. This can't be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1;" id="cancelDelete">Cancel</button>
+      <button class="btn btn-danger" style="flex:1;" id="confirmDelete">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Clear history confirmation modal -->
+<div class="modal-overlay" id="clearModal">
+  <div class="modal">
+    <h3>Clear all task history?</h3>
+    <p>This permanently removes every project card and its stored result from this device.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1;" id="cancelClear">Cancel</button>
+      <button class="btn btn-danger" style="flex:1;" id="confirmClear">Clear All</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   0. CONFIG — set a real base URL to enable a live backend
+   For Android packaging (Capacitor/WebView), swap DEVICE_SAVE
+   below for the Capacitor Filesystem/Share plugin.
+============================================================ */
+const DevilEnhancerAPI = {
+  baseURL: null, // e.g. "https://api.yourdomain.com" — null means Demo Mode
+  endpoints: {
+    upload:  "/api/upload",
+    enhance: "/api/enhance",
+    task:    (id) => `/api/task/${id}`,
+    result:  (id) => `/api/result/${id}`
+  },
+  get demoMode(){ return !this.baseURL; },
+
+  async uploadVideo(file, onProgress){
+    if (this.demoMode) return simulateUpload(file, onProgress);
+    const form = new FormData();
+    form.append("video", file);
+    const res = await fetch(this.baseURL + this.endpoints.upload, { method:"POST", body: form });
+    if (!res.ok) throw new Error("Upload failed");
+    return res.json();
+  },
+
+  async createEnhancementTask(payload){
+    // payload: { resolution, fps, enhancementModes, aiStrength, sharpness, denoise, bitrate, outputFormat, preset }
+    if (this.demoMode) return simulateCreateTask(payload);
+    const res = await fetch(this.baseURL + this.endpoints.enhance, {
+      method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error("Failed to create enhancement task");
+    return res.json();
+  },
+
+  async getTaskStatus(taskId){
+    if (this.demoMode) return simulateGetStatus(taskId);
+    const res = await fetch(this.baseURL + this.endpoints.task(taskId));
+    if (!res.ok) throw new Error("Failed to fetch task status");
+    return res.json();
+  },
+
+  async getTaskResult(taskId){
+    if (this.demoMode) return simulateGetResult(taskId);
+    const res = await fetch(this.baseURL + this.endpoints.result(taskId));
+    if (!res.ok) throw new Error("Failed to fetch task result");
+    return res.json();
+  },
+
+  async downloadResult(taskId){
+    const task = TaskStore.get(taskId);
+    if (!task || !task._blobUrl) throw new Error("No result available to download");
+    return task._blobUrl;
+  },
+
+  // Placeholder for native "save to device" via Capacitor Filesystem/Share API
+  // when this app is wrapped for Android. In the browser this falls back to
+  // a standard anchor download.
+  async saveToDevice(blobUrl, filename){
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem){
+      // Example integration point:
+      // const base64 = await blobUrlToBase64(blobUrl);
+      // await window.Capacitor.Plugins.Filesystem.writeFile({ path: filename, data: base64, directory: 'DOCUMENTS' });
+      return true;
+    }
+    return false; // caller falls back to anchor download
+  }
+};
+
+/* ============================================================
+   1. THEME
+============================================================ */
+const THEME_KEY = 'devilEnhancer.theme';
+function systemPrefersDark(){ return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }
+function resolveTheme(pref){ return pref === 'system' ? (systemPrefersDark() ? 'dark':'light') : pref; }
+function applyTheme(pref){
+  const resolved = resolveTheme(pref);
+  document.documentElement.setAttribute('data-theme', resolved);
+  document.querySelectorAll('#themeSeg button').forEach(b => b.classList.toggle('selected', b.dataset.theme === pref));
+  document.getElementById('quickThemeIcon').innerHTML = `<use href="${resolved==='dark' ? '#ic-moon' : '#ic-sun'}"/>`;
+}
+function setThemePref(pref){ localStorage.setItem(THEME_KEY, pref); applyTheme(pref); }
+function getThemePref(){ return localStorage.getItem(THEME_KEY) || 'dark'; }
+applyTheme(getThemePref());
+document.getElementById('themeSeg').addEventListener('click', e => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  setThemePref(btn.dataset.theme);
+});
+document.getElementById('quickThemeBtn').addEventListener('click', () => {
+  const current = resolveTheme(getThemePref());
+  setThemePref(current === 'dark' ? 'light' : 'dark');
+});
+if (window.matchMedia){
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (getThemePref() === 'system') applyTheme('system');
+  });
+}
+
+/* ============================================================
+   2. TOAST / ALERT SYSTEM
+============================================================ */
+const toastStack = document.getElementById('toastStack');
+function toast(type, title, msg, timeout){
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  const iconId = type === 'error' ? '#ic-alert' : type === 'success' ? '#ic-check' : '#ic-info';
+  el.innerHTML = `<svg class="icon ic" style="width:17px;height:17px;"><use href="${iconId}"/></svg><div class="msg"><b>${escapeHtml(title)}</b>${msg? `<span>${escapeHtml(msg)}</span>`:''}</div><button class="close" aria-label="Dismiss"><svg class="icon" style="width:13px;height:13px;"><use href="#ic-close"/></svg></button>`;
+  toastStack.appendChild(el);
+  const remove = () => { el.classList.add('leaving'); setTimeout(()=> el.remove(), 260); };
+  el.querySelector('.close').addEventListener('click', remove);
+  setTimeout(remove, timeout || 4400);
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+
+/* ============================================================
+   3. NAVIGATION
+============================================================ */
+const pages = { home: document.getElementById('page-home'), tasks: document.getElementById('page-tasks'), settings: document.getElementById('page-settings') };
+function goToPage(name){
+  Object.keys(pages).forEach(k => pages[k].classList.toggle('active', k === name));
+  document.querySelectorAll('.sidebar-link').forEach(b => b.classList.toggle('active', b.dataset.page === name));
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.page === name));
+  if (name === 'tasks') renderTasksWithSkeleton();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+document.querySelectorAll('[data-page]').forEach(b => b.addEventListener('click', () => goToPage(b.dataset.page)));
+document.getElementById('settingsBtn').addEventListener('click', () => goToPage('settings'));
+document.getElementById('emptyCta').addEventListener('click', () => goToPage('home'));
+
+/* ============================================================
+   4. TASK STORE (localStorage)
+============================================================ */
+const TaskStore = (function(){
+  const KEY = 'devilEnhancer.tasks.v1';
+  let cache = null;
+  function load(){
+    if (cache) return cache;
+    try { cache = JSON.parse(localStorage.getItem(KEY)) || []; }
+    catch(e){ cache = []; }
+    return cache;
+  }
+  function persist(){
+    try {
+      const serializable = load().map(t => { const {_blobUrl, _objectUrl, ...rest} = t; return rest; });
+      localStorage.setItem(KEY, JSON.stringify(serializable));
+    } catch(e){ console.warn('Storage full or unavailable', e); }
+  }
+  return {
+    all(){ return load(); },
+    get(id){ return load().find(t => t.id === id); },
+    add(task){ load().unshift(task); persist(); },
+    update(id, patch){ const t = this.get(id); if (t) Object.assign(t, patch); persist(); return t; },
+    remove(id){ cache = load().filter(t => t.id !== id); persist(); },
+    clearAll(){ cache = []; persist(); }
+  };
+})();
+
+/* ============================================================
+   5. STATE
+============================================================ */
+let selectedFile = null;
+let selectedFileMeta = null;
+let currentTaskId = null;
+
+const state = {
+  preset: 'high',
+  resolution: '2k',
+  modes: new Set(['ultrahd']),
+  fps: 60,
+  advanced: {
+    aistrength:70, sharpness:55, denoise:50, detail:60, deblur:40, artifact:45,
+    contrast:50, saturation:50, hdr:30, motionsmooth:true, frameinterp:true,
+    bitrate:12, quality:75, format:'mp4'
+  }
+};
+
+// Load user's saved processing defaults into state on startup
+(function loadDefaults(){
+  try {
+    const saved = JSON.parse(localStorage.getItem('devilEnhancer.defaults') || 'null');
+    if (saved){
+      document.getElementById('defResolution').value = saved.resolution || '2k';
+      document.getElementById('defFps').value = saved.fps || '60';
+      document.getElementById('defPreset').value = saved.preset || 'high';
+    }
+  } catch(e){}
+})();
+['defResolution','defFps','defPreset'].forEach(id => {
+  document.getElementById(id).addEventListener('change', saveDefaults);
+});
+function saveDefaults(){
+  const d = {
+    resolution: document.getElementById('defResolution').value,
+    fps: document.getElementById('defFps').value,
+    preset: document.getElementById('defPreset').value
+  };
+  localStorage.setItem('devilEnhancer.defaults', JSON.stringify(d));
+  toast('success', 'Defaults saved');
+}
+
+/* ============================================================
+   6. FILE HANDLING
+============================================================ */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const chooseBtn = document.getElementById('chooseBtn');
+const filePreview = document.getElementById('filePreview');
+const settingsArea = document.getElementById('settingsArea');
+const actionbar = document.getElementById('actionbar');
+
+const ACCEPTED_EXT = ['mp4','mov','webm','mkv'];
+const MAX_BYTES = 2 * 1024 * 1024 * 1024; // 2GB
+
+chooseBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('keydown', (e) => { if (e.key==='Enter'||e.key===' '){ e.preventDefault(); fileInput.click(); } });
+
+['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.add('dragover'); }));
+['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.remove('dragover'); }));
+dropzone.addEventListener('drop', e => { const files = e.dataTransfer.files; if (files && files[0]) handleFile(files[0]); });
+fileInput.addEventListener('change', e => { if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]); });
+
+function getExt(name){ return (name.split('.').pop() || '').toLowerCase(); }
+
+function handleFile(file){
+  const ext = getExt(file.name);
+  if (!ACCEPTED_EXT.includes(ext)) { toast('error', 'Unsupported format.', 'Please choose an MP4, MOV, WEBM or MKV file.'); return; }
+  if (file.size > MAX_BYTES) { toast('error', 'File too large.', 'Please choose a file under 2GB.'); return; }
+  selectedFile = file;
+  loadFileMeta(file);
+}
+
+function loadFileMeta(file){
+  const url = URL.createObjectURL(file);
+  const vid = document.getElementById('previewVideo');
+  vid.src = url;
+  vid.onloadedmetadata = () => {
+    selectedFileMeta = { name: file.name, size: file.size, duration: vid.duration, width: vid.videoWidth, height: vid.videoHeight, format: getExt(file.name).toUpperCase() };
+    populateFilePreview();
+    settingsArea.style.display = 'block';
+    actionbar.style.display = 'block';
+    applyDefaultsToState();
+    updateActionInfo();
+    toast('success', 'Video loaded', `${file.name} is ready to enhance.`);
+  };
+  vid.onerror = () => { toast('error', 'Your browser does not support this feature.', 'Could not read this video file for preview.'); };
+}
+
+function applyDefaultsToState(){
+  const defRes = document.getElementById('defResolution').value;
+  const defPreset = document.getElementById('defPreset').value;
+  if (defPreset) applyPreset(defPreset, true);
+  if (defRes){ state.resolution = defRes; document.querySelectorAll('.res-card').forEach(c => c.classList.toggle('selected', c.dataset.res===defRes)); }
+}
+
+function fmtBytes(bytes){
+  if (!bytes) return '0 B';
+  const units = ['B','KB','MB','GB']; let i=0, n=bytes;
+  while (n >= 1024 && i < units.length-1){ n/=1024; i++; }
+  return `${n.toFixed(n<10 && i>0 ? 1:0)} ${units[i]}`;
+}
+function fmtDuration(sec){ if (!isFinite(sec)) return '—'; const m=Math.floor(sec/60), s=Math.floor(sec%60); return `${m}:${String(s).padStart(2,'0')}`; }
+
+function populateFilePreview(){
+  document.getElementById('fname').textContent = selectedFileMeta.name;
+  document.getElementById('fsize').textContent = fmtBytes(selectedFileMeta.size);
+  document.getElementById('fduration').textContent = fmtDuration(selectedFileMeta.duration);
+  document.getElementById('fresolution').textContent = selectedFileMeta.width ? `${selectedFileMeta.width}×${selectedFileMeta.height}` : '—';
+  document.getElementById('ffps').textContent = '~30 fps (est.)';
+  document.getElementById('fformat').textContent = selectedFileMeta.format;
+  filePreview.classList.add('show');
+}
+
+document.getElementById('removeFile').addEventListener('click', () => {
+  selectedFile = null; selectedFileMeta = null;
+  filePreview.classList.remove('show');
+  settingsArea.style.display = 'none';
+  actionbar.style.display = 'none';
+  fileInput.value = '';
+  document.getElementById('procCard').style.display = 'none';
+  document.getElementById('compareWrap').classList.remove('show');
+});
+
+/* ============================================================
+   7. PRESETS
+============================================================ */
+const PRESET_CONFIG = {
+  fast:     { resolution:'1080p', modes:['ultrahd'], fps:30, adv:{aistrength:40,sharpness:35,denoise:30,detail:30,deblur:20,artifact:25,bitrate:6,quality:40} },
+  balanced: { resolution:'1080p', modes:['ultrahd','color'], fps:60, adv:{aistrength:55,sharpness:50,denoise:45,detail:50,deblur:35,artifact:40,bitrate:10,quality:60} },
+  high:     { resolution:'2k', modes:['ultrahd'], fps:60, adv:{aistrength:70,sharpness:55,denoise:50,detail:60,deblur:40,artifact:45,bitrate:12,quality:75} },
+  ultra:    { resolution:'4k', modes:['ultrahd','repair','face'], fps:120, adv:{aistrength:82,sharpness:65,denoise:60,detail:75,deblur:55,artifact:60,bitrate:28,quality:88} },
+  maximum:  { resolution:'8k', modes:['ultrahd','repair','superres','face','color','detail'], fps:240, adv:{aistrength:96,sharpness:78,denoise:72,detail:90,deblur:68,artifact:75,bitrate:60,quality:100} },
+  freefire: { resolution:'1080p', modes:['ultrahd','repair','color'], fps:90, adv:{aistrength:75,sharpness:72,denoise:58,detail:65,deblur:45,artifact:70,bitrate:14,quality:80} },
+};
+
+document.getElementById('presetRow').addEventListener('click', e => {
+  const chip = e.target.closest('.preset-chip'); if (!chip) return;
+  applyPreset(chip.dataset.preset);
+});
+
+function applyPreset(name, silent){
+  const cfg = PRESET_CONFIG[name]; if (!cfg) return;
+  state.preset = name;
+  document.querySelectorAll('.preset-chip').forEach(c => c.classList.toggle('selected', c.dataset.preset===name));
+  document.getElementById('ffBanner').classList.toggle('show', name === 'freefire');
+
+  state.resolution = cfg.resolution;
+  document.querySelectorAll('.res-card').forEach(c => c.classList.toggle('selected', c.dataset.res===cfg.resolution));
+
+  state.modes = new Set(cfg.modes);
+  document.querySelectorAll('#modeGrid .opt-card').forEach(c => c.classList.toggle('selected', state.modes.has(c.dataset.mode)));
+
+  state.fps = cfg.fps;
+  renderFpsGrid();
+
+  Object.assign(state.advanced, cfg.adv);
+  syncAdvancedUI();
+  updateActionInfo();
+  if (!silent) toast('info', name === 'freefire' ? 'Free Fire Optimized' : `${document.querySelector('[data-preset="'+name+'"]').textContent.trim()} preset applied`);
+}
+
+/* ============================================================
+   8. RESOLUTION + MODE SELECTION
+============================================================ */
+document.getElementById('resGrid').addEventListener('click', e => {
+  const card = e.target.closest('.res-card'); if (!card) return;
+  document.querySelectorAll('.res-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  state.resolution = card.dataset.res;
+  updateActionInfo();
+});
+
+document.getElementById('modeGrid').addEventListener('click', e => {
+  const card = e.target.closest('.opt-card'); if (!card) return;
+  const mode = card.dataset.mode;
+  if (state.modes.has(mode)) { state.modes.delete(mode); card.classList.remove('selected'); }
+  else { state.modes.add(mode); card.classList.add('selected'); }
+  if (state.modes.size === 0) { state.modes.add('ultrahd'); document.querySelector('[data-mode="ultrahd"]').classList.add('selected'); toast('info','At least one mode is required','Ultra HD has been kept selected.'); }
+  updateActionInfo();
+});
+
+/* ============================================================
+   9. FPS
+============================================================ */
+const FPS_OPTIONS = [30,60,90,120,144,165,240,360,480,720,960,1200,1920];
+const fpsGrid = document.getElementById('fpsGrid');
+function renderFpsGrid(){
+  fpsGrid.innerHTML = '';
+  FPS_OPTIONS.forEach(fps => {
+    const chip = document.createElement('div');
+    chip.className = 'fps-chip' + (state.fps === fps ? ' selected' : '');
+    chip.dataset.fps = fps;
+    chip.innerHTML = `${fps}<span class="fps-tag">${fps >= 240 ? 'ADVANCED' : fps>=90 ? 'SMOOTH' : 'STANDARD'}</span>`;
+    chip.addEventListener('click', () => { state.fps = fps; document.getElementById('fpsCustom').value=''; renderFpsGrid(); updateActionInfo(); });
+    fpsGrid.appendChild(chip);
+  });
+}
+renderFpsGrid();
+
+const fpsCustom = document.getElementById('fpsCustom');
+fpsCustom.addEventListener('input', () => {
+  let raw = fpsCustom.value;
+  if (!raw) return;
+  let v = parseInt(raw, 10);
+  if (isNaN(v)) { toast('error','Invalid FPS','Enter a number between 30 and 1920.'); return; }
+  v = Math.min(1920, Math.max(30, v));
+  state.fps = v;
+  document.querySelectorAll('.fps-chip').forEach(c => c.classList.toggle('selected', parseInt(c.dataset.fps)===v && String(v)===raw));
+  updateActionInfo();
+});
+fpsCustom.addEventListener('blur', () => {
+  if (fpsCustom.value){ let v = parseInt(fpsCustom.value,10) || 30; v = Math.min(1920, Math.max(30, v)); fpsCustom.value = v; }
+});
+
+/* ============================================================
+   10. ADVANCED SETTINGS
+============================================================ */
+const advToggle = document.getElementById('advToggle');
+const advPanel = document.getElementById('advPanel');
+advToggle.addEventListener('click', () => advPanel.classList.toggle('adv-open'));
+
+const SLIDER_IDS = ['aistrength','sharpness','denoise','detail','deblur','artifact','contrast','saturation','hdr'];
+SLIDER_IDS.forEach(id => {
+  const input = document.getElementById('s_'+id);
+  const label = document.getElementById('v_'+id);
+  input.addEventListener('input', () => { state.advanced[id] = parseInt(input.value,10); label.textContent = input.value + '%'; });
+});
+const bitrateInput = document.getElementById('s_bitrate');
+const bitrateLabel = document.getElementById('v_bitrate');
+bitrateInput.addEventListener('input', () => { state.advanced.bitrate = parseInt(bitrateInput.value,10); bitrateLabel.textContent = bitrateInput.value + ' Mbps'; });
+const qualityInput = document.getElementById('s_quality');
+const qualityLabel = document.getElementById('v_quality');
+qualityInput.addEventListener('input', () => { state.advanced.quality = parseInt(qualityInput.value,10); qualityLabel.textContent = qualityInput.value + '%'; });
+
+function bindSwitch(id, key){
+  const el = document.getElementById(id);
+  el.addEventListener('click', () => { state.advanced[key] = !state.advanced[key]; el.classList.toggle('on', state.advanced[key]); });
+}
+bindSwitch('t_motionsmooth','motionsmooth');
+bindSwitch('t_frameinterp','frameinterp');
+
+document.getElementById('formatRow').addEventListener('click', e => {
+  const btn = e.target.closest('.seg-btn'); if (!btn) return;
+  document.querySelectorAll('#formatRow .seg-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.advanced.format = btn.dataset.format;
+});
+
+function syncAdvancedUI(){
+  SLIDER_IDS.forEach(id => { document.getElementById('s_'+id).value = state.advanced[id]; document.getElementById('v_'+id).textContent = state.advanced[id] + '%'; });
+  bitrateInput.value = state.advanced.bitrate; bitrateLabel.textContent = state.advanced.bitrate + ' Mbps';
+  qualityInput.value = state.advanced.quality; qualityLabel.textContent = state.advanced.quality + '%';
+  document.getElementById('t_motionsmooth').classList.toggle('on', state.advanced.motionsmooth);
+  document.getElementById('t_frameinterp').classList.toggle('on', state.advanced.frameinterp);
+}
+
+/* ============================================================
+   11. ACTION BAR
+============================================================ */
+const actionInfo = document.getElementById('actionInfo');
+function updateActionInfo(){
+  if (!selectedFile){ return; }
+  const resLabel = state.resolution.toUpperCase();
+  actionInfo.innerHTML = `<b>${resLabel} · ${state.fps} FPS</b> · ${state.modes.size} mode${state.modes.size>1?'s':''}<span class="demo-flag"><svg class="icon" style="width:10px;height:10px;"><use href="#ic-info"/></svg>DEMO MODE</span>`;
+}
+
+/* ============================================================
+   12. START ENHANCEMENT / PROCESSING SIMULATION
+============================================================ */
+const STAGES = ['Uploading','Analyzing Video','AI Repair','Noise Reduction','Super Resolution','Detail Enhancement','Frame Interpolation','Rendering','Finalizing','Complete'];
+
+const procCard = document.getElementById('procCard');
+const procRunning = document.getElementById('procRunning');
+const readyBanner = document.getElementById('readyBanner');
+const procRing = document.getElementById('procRing');
+const procPct = document.getElementById('procPct');
+const procStageLabel = document.getElementById('procStageLabel');
+const stageList = document.getElementById('stageList');
+const RING_CIRC = 2 * Math.PI * 52;
+
+function buildStageList(){
+  stageList.innerHTML = '';
+  STAGES.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'stageitem'; item.dataset.i = i;
+    item.innerHTML = `<span class="dot"></span><span>${s}</span>`;
+    stageList.appendChild(item);
+  });
+}
+function setStageUI(activeIndex){
+  [...stageList.children].forEach((el, i) => {
+    el.classList.toggle('active', i === activeIndex);
+    el.classList.toggle('complete', i < activeIndex);
+    const dot = el.querySelector('.dot');
+    dot.innerHTML = i < activeIndex ? '<svg class="icon" style="width:9px;height:9px;stroke-width:3;color:#04220f;"><use href="#ic-check"/></svg>' : '';
+  });
+}
+
+document.getElementById('startBtn').addEventListener('click', startEnhancement);
+
+let procTimer = null;
+let procStartTime = null;
+
+function validateSettings(){
+  if (!selectedFile){ toast('error','Please select a video first.'); return false; }
+  if (state.modes.size === 0){ toast('error','Invalid settings','Select at least one enhancement mode.'); return false; }
+  if (!state.fps || state.fps < 30 || state.fps > 1920){ toast('error','Invalid FPS','FPS must be between 30 and 1920.'); return false; }
+  return true;
+}
+
+function startEnhancement(){
+  if (!validateSettings()) return;
+
+  const taskId = 'task_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  currentTaskId = taskId;
+
+  const originalRes = selectedFileMeta.width ? `${selectedFileMeta.width}×${selectedFileMeta.height}` : 'Unknown';
+  const targetRes = resolutionLabel(state.resolution, selectedFileMeta);
+
+  const task = {
+    id: taskId, name: selectedFile.name, status: 'queued', createdAt: Date.now(), size: selectedFileMeta.size,
+    originalRes, targetRes, originalFps: 30, targetFps: state.fps,
+    settings: JSON.parse(JSON.stringify({ resolution: state.resolution, modes:[...state.modes], fps: state.fps, advanced: state.advanced, preset: state.preset })),
+    progress: 0,
+    _objectUrl: URL.createObjectURL(selectedFile)
+  };
+  TaskStore.add(task);
+
+  procCard.style.display = 'block';
+  procRunning.style.display = 'block';
+  readyBanner.style.display = 'none';
+  buildStageList();
+  procStartTime = Date.now();
+  document.getElementById('statRes').innerHTML = `${originalRes}<span class="arrow">→</span><span class="to" id="statResTo">${targetRes}</span>`;
+  document.getElementById('statFps').innerHTML = `30 fps<span class="arrow">→</span><span class="to" id="statFpsTo">${state.fps} fps</span>`;
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('startBtn').textContent = 'Enhancing…';
+
+  procCard.scrollIntoView({behavior:'smooth', block:'center'});
+
+  const payload = {
+    resolution: state.resolution, fps: state.fps, enhancementModes:[...state.modes],
+    aiStrength: state.advanced.aistrength, sharpness: state.advanced.sharpness, denoise: state.advanced.denoise,
+    bitrate: state.advanced.bitrate, outputFormat: state.advanced.format, preset: state.preset, taskId
+  };
+
+  DevilEnhancerAPI.uploadVideo(selectedFile, () => {}).then(() => {
+    TaskStore.update(taskId, { status:'processing' });
+    return DevilEnhancerAPI.createEnhancementTask(payload);
+  }).then(() => {
+    pollTask(taskId);
+  }).catch(err => {
+    toast('error', 'Processing failed. Please try again.', err.message);
+    TaskStore.update(taskId, { status:'failed' });
+    resetActionButton();
+  });
+}
+
+function resolutionLabel(res, meta){
+  const map = { '720p':'1280×720', '1080p':'1920×1080', '2k':'2560×1440', '4k':'3840×2160', '8k':'7680×4320' };
+  if (res === 'original') return meta.width ? `${meta.width}×${meta.height}` : 'Original';
+  return map[res] || res;
+}
+
+function pollTask(taskId){
+  clearInterval(procTimer);
+  procTimer = setInterval(async () => {
+    try {
+      const status = await DevilEnhancerAPI.getTaskStatus(taskId);
+      renderProgress(status);
+      if (status.state === 'completed'){
+        clearInterval(procTimer);
+        const result = await DevilEnhancerAPI.getTaskResult(taskId);
+        finishTask(taskId, result);
+      } else if (status.state === 'failed'){
+        clearInterval(procTimer);
+        toast('error', 'Processing failed. Please try again.');
+        TaskStore.update(taskId, { status:'failed' });
+        resetActionButton();
+      }
+    } catch(e){
+      clearInterval(procTimer);
+      toast('error', 'Network error', 'Lost connection while processing. Please try again.');
+      TaskStore.update(taskId, { status:'failed' });
+      resetActionButton();
+    }
+  }, 320);
+}
+
+function renderProgress(status){
+  const pct = Math.round(status.progress);
+  procPct.textContent = pct + '%';
+  const offset = RING_CIRC - (RING_CIRC * pct/100);
+  procRing.setAttribute('stroke-dasharray', RING_CIRC);
+  procRing.setAttribute('stroke-dashoffset', offset);
+  procStageLabel.textContent = STAGES[status.stageIndex] + '…';
+  setStageUI(status.stageIndex);
+
+  const elapsedSec = Math.floor((Date.now() - procStartTime)/1000);
+  document.getElementById('statElapsed').textContent = fmtDuration(elapsedSec);
+  const remaining = status.estRemainingSec;
+  document.getElementById('statRemaining').textContent = remaining > 0 ? '~' + fmtDuration(remaining) : 'Finishing…';
+
+  TaskStore.update(status.taskId, { progress: pct, status: 'processing' });
+  if (pages.tasks.classList.contains('active')) renderTasks();
+}
+
+function finishTask(taskId, result){
+  procRunning.style.display = 'none';
+  readyBanner.style.display = 'block';
+  const task = TaskStore.get(taskId);
+  TaskStore.update(taskId, { status:'completed', progress:100, _blobUrl: result.blobUrl, resultSize: result.size });
+  task._blobUrl = result.blobUrl;
+
+  const cmpBase = document.getElementById('cmpBase');
+  const cmpOverlay = document.getElementById('cmpOverlay');
+  cmpBase.src = task._objectUrl;
+  cmpOverlay.src = result.blobUrl;
+  document.getElementById('compareWrap').classList.add('show');
+  initCompareSlider();
+
+  resetActionButton();
+  toast('success', 'Enhancement Complete', 'Your enhanced video is ready!');
+}
+
+function resetActionButton(){
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('startBtn').textContent = 'Start Enhancement';
+}
+
+document.getElementById('btnPreviewResult').addEventListener('click', () => {
+  document.getElementById('compareWrap').scrollIntoView({behavior:'smooth', block:'center'});
+  document.getElementById('cmpOverlay').play().catch(()=>{});
+  document.getElementById('cmpBase').play().catch(()=>{});
+});
+document.getElementById('btnDownloadResult').addEventListener('click', () => downloadTask(currentTaskId));
+document.getElementById('btnSaveDevice').addEventListener('click', () => downloadTask(currentTaskId, true));
+
+async function downloadTask(taskId, preferNative){
+  const task = TaskStore.get(taskId);
+  if (!task || !task._blobUrl){ toast('error', 'Nothing to download yet.'); return; }
+  const ext = (task.settings && task.settings.advanced && task.settings.advanced.format) || 'mp4';
+  const filename = (task.name.replace(/\.[^.]+$/,'') || 'devil-enhanced') + `_enhanced.${ext}`;
+
+  if (preferNative){
+    const savedNatively = await DevilEnhancerAPI.saveToDevice(task._blobUrl, filename).catch(()=>false);
+    if (savedNatively){ toast('success', 'Saved to device'); return; }
+  }
+  const a = document.createElement('a');
+  a.href = task._blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  toast('success', 'Download started', filename);
+}
+
+/* ============================================================
+   13. COMPARE SLIDER
+============================================================ */
+function initCompareSlider(){
+  const slider = document.getElementById('compareSlider');
+  const fill = document.getElementById('cmpFill');
+  const handle = document.getElementById('cmpHandle');
+  const overlay = document.getElementById('cmpOverlay');
+
+  function setSplit(pct){
+    pct = Math.min(96, Math.max(4, pct));
+    fill.style.width = pct + '%';
+    handle.style.left = pct + '%';
+    const rect = slider.getBoundingClientRect();
+    overlay.style.width = rect.width + 'px';
+  }
+  setSplit(50);
+  function resizeOverlay(){ const rect = slider.getBoundingClientRect(); overlay.style.width = rect.width + 'px'; overlay.style.height = rect.height + 'px'; }
+  resizeOverlay();
+  window.addEventListener('resize', resizeOverlay);
+
+  let dragging = false;
+  const start = () => dragging = true;
+  const stop = () => dragging = false;
+  const move = (clientX) => { if (!dragging) return; const rect = slider.getBoundingClientRect(); setSplit(((clientX - rect.left) / rect.width) * 100); };
+  handle.addEventListener('mousedown', start);
+  handle.addEventListener('touchstart', start, {passive:true});
+  window.addEventListener('mouseup', stop);
+  window.addEventListener('touchend', stop);
+  window.addEventListener('mousemove', e => move(e.clientX));
+  window.addEventListener('touchmove', e => { if (dragging && e.touches[0]) move(e.touches[0].clientX); }, {passive:true});
+  slider.addEventListener('click', e => { const rect = slider.getBoundingClientRect(); setSplit(((e.clientX-rect.left)/rect.width)*100); });
+}
+
+/* ============================================================
+   14. TASKS PAGE RENDERING
+============================================================ */
+let activeFilter = 'all';
+document.getElementById('filterRow').addEventListener('click', e => {
+  const chip = e.target.closest('.filter-chip'); if (!chip) return;
+  activeFilter = chip.dataset.filter;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('selected', c===chip));
+  renderTasks();
+});
+
+const taskGrid = document.getElementById('taskGrid');
+const emptyState = document.getElementById('emptyState');
+const taskCount = document.getElementById('taskCount');
+const skeletonGrid = document.getElementById('skeletonGrid');
+
+function renderTasksWithSkeleton(){
+  const hasTasks = TaskStore.all().length > 0;
+  if (!hasTasks){ renderTasks(); return; }
+  skeletonGrid.style.display = 'grid';
+  taskGrid.style.display = 'none';
+  emptyState.style.display = 'none';
+  setTimeout(() => { skeletonGrid.style.display = 'none'; renderTasks(); }, 380);
+}
+
+function renderTasks(){
+  const all = TaskStore.all();
+  taskCount.textContent = `${all.length} project${all.length!==1?'s':''}`;
+  const list = activeFilter === 'all' ? all : all.filter(t => t.status === activeFilter);
+
+  skeletonGrid.style.display = 'none';
+  taskGrid.innerHTML = '';
+  if (list.length === 0){
+    emptyState.style.display = 'block';
+    taskGrid.style.display = 'none';
+    return;
+  }
+  emptyState.style.display = 'none';
+  taskGrid.style.display = 'grid';
+  list.forEach(t => taskGrid.appendChild(renderTaskCard(t)));
+}
+
+function renderTaskCard(t){
+  const el = document.createElement('div');
+  el.className = 'card task-card';
+  const date = new Date(t.createdAt);
+  const dateStr = date.toLocaleDateString(undefined,{month:'short',day:'numeric'}) + ' · ' + date.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+
+  const thumbInner = t._objectUrl ? `<video src="${t._objectUrl}" muted></video>` : `<svg class="icon" style="width:26px;height:26px;"><use href="#ic-tasks"/></svg>`;
+
+  el.innerHTML = `
+    <div class="task-thumb">
+      ${thumbInner}
+      <span class="status-pill ${t.status}">${t.status}</span>
+    </div>
+    <div>
+      <div class="task-title" title="${escapeHtml(t.name)}">${escapeHtml(t.name)}</div>
+      <div class="task-meta"><span><b>${escapeHtml(t.originalRes||'—')}</b> → <b>${escapeHtml(t.targetRes||'—')}</b></span></div>
+      <div class="task-meta"><span><b>${t.originalFps||'—'} fps</b> → <b>${t.targetFps||'—'} fps</b></span><span>${fmtBytes(t.size)}</span></div>
+      <div class="task-meta"><span>${dateStr}</span></div>
+    </div>
+    ${t.status==='processing' ? `<div class="task-progress-mini"><div class="fill" style="width:${t.progress||0}%"></div></div>` : ''}
+    <div class="task-actions">
+      <button class="btn btn-secondary btn-sm" data-act="preview" ${t.status!=='completed'?'disabled':''}><svg class="icon" style="width:13px;height:13px;"><use href="#ic-play"/></svg>Preview</button>
+      <button class="btn btn-secondary btn-sm" data-act="download" ${t.status!=='completed'?'disabled':''}><svg class="icon" style="width:13px;height:13px;"><use href="#ic-download"/></svg></button>
+      <button class="btn btn-danger btn-sm" data-act="delete"><svg class="icon" style="width:13px;height:13px;"><use href="#ic-trash"/></svg></button>
+    </div>
+  `;
+
+  el.querySelector('[data-act="preview"]').addEventListener('click', () => {
+    if (t._objectUrl){ window.open(t._objectUrl, '_blank'); }
+  });
+  el.querySelector('[data-act="download"]').addEventListener('click', () => downloadTask(t.id));
+  el.querySelector('[data-act="delete"]').addEventListener('click', () => openDeleteModal(t.id));
+  return el;
+}
+
+/* ============================================================
+   15. MODALS
+============================================================ */
+const deleteModal = document.getElementById('deleteModal');
+let pendingDeleteId = null;
+function openDeleteModal(id){ pendingDeleteId = id; deleteModal.classList.add('show'); }
+function closeDeleteModal(){ pendingDeleteId = null; deleteModal.classList.remove('show'); }
+document.getElementById('cancelDelete').addEventListener('click', closeDeleteModal);
+deleteModal.addEventListener('click', e => { if (e.target === deleteModal) closeDeleteModal(); });
+document.getElementById('confirmDelete').addEventListener('click', () => {
+  if (pendingDeleteId){ TaskStore.remove(pendingDeleteId); renderTasks(); toast('success','Project deleted'); }
+  closeDeleteModal();
+});
+
+const clearModal = document.getElementById('clearModal');
+document.getElementById('clearHistoryBtn').addEventListener('click', () => clearModal.classList.add('show'));
+document.getElementById('cancelClear').addEventListener('click', () => clearModal.classList.remove('show'));
+clearModal.addEventListener('click', e => { if (e.target === clearModal) clearModal.classList.remove('show'); });
+document.getElementById('confirmClear').addEventListener('click', () => {
+  TaskStore.clearAll(); renderTasks(); clearModal.classList.remove('show');
+  toast('success', 'Task history cleared');
+});
+
+/* ============================================================
+   16. DEMO-MODE SIMULATION LAYER
+   Stands in for a real GPU backend (FFmpeg / Real-ESRGAN / RIFE /
+   AI denoising). Isolated so a live API can be swapped in by
+   setting DevilEnhancerAPI.baseURL. Demo Mode reuses the original
+   file as the "result" — it never fabricates a real enhanced video.
+============================================================ */
+const demoTasks = {};
+
+function simulateUpload(file, onProgress){
+  return new Promise(resolve => {
+    let p = 0;
+    const iv = setInterval(() => {
+      p += 20 + Math.random()*20;
+      if (p >= 100){ p = 100; clearInterval(iv); resolve({ ok:true, uploaded:true, name:file.name }); }
+      if (onProgress) onProgress(Math.min(100,p));
+    }, 90);
+  });
+}
+
+function simulateCreateTask(payload){
+  const total = 10;
+  demoTasks[payload.taskId] = {
+    stageIndex: 0, progress: 0, startedAt: Date.now(), totalStages: total,
+    durationMs: 7000 + (payload.fps > 240 ? 2500 : 0) + (['4k','8k'].includes(payload.resolution) ? 2000 : 0)
+  };
+  return Promise.resolve({ taskId: payload.taskId, state:'queued' });
+}
+
+function simulateGetStatus(taskId){
+  const t = demoTasks[taskId];
+  if (!t) return Promise.reject(new Error('Unknown task'));
+  const elapsed = Date.now() - t.startedAt;
+  const pct = Math.min(100, (elapsed / t.durationMs) * 100);
+  const stageIndex = Math.min(t.totalStages - 1, Math.floor((pct/100) * t.totalStages));
+  t.progress = pct; t.stageIndex = stageIndex;
+  const remainingMs = Math.max(0, t.durationMs - elapsed);
+  return Promise.resolve({ taskId, progress: pct, stageIndex, estRemainingSec: Math.round(remainingMs/1000), state: pct >= 100 ? 'completed' : 'processing' });
+}
+
+function simulateGetResult(taskId){
+  const task = TaskStore.get(taskId);
+  const blobUrl = task ? task._objectUrl : null;
+  return Promise.resolve({ taskId, blobUrl, size: task ? task.size : 0, note: 'Demo Mode result — original file reused; no real AI enhancement was performed.' });
+}
+
+/* ============================================================
+   17. INIT
+============================================================ */
+syncAdvancedUI();
+renderTasks();
+})();
+</script>
+</body>
+</html>
