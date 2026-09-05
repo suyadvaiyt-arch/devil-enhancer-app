@@ -42,33 +42,33 @@ jobs:
           open(p,"w").write(s)
           PY
       - run: |
-       mkdir -p android/app/src/main/java/com/devil/enhancer
-       cat > android/app/src/main/java/com/devil/enhancer/EnhancerPlugin.java <<'JAVA'
-       package com.devil.enhancer;
+         mkdir -p android/app/src/main/java/com/devil/enhancer
+         cat > android/app/src/main/java/com/devil/enhancer/EnhancerPlugin.java <<'JAVA'
+         package com.devil.enhancer;
 
-       import android.content.Intent;
-       import android.net.Uri;
+         import android.content.Intent;
+         import android.net.Uri;
 
-       import com.getcapacitor.ActivityResult;
-       import com.getcapacitor.Plugin;
-       import com.getcapacitor.PluginCall;
-       import com.getcapacitor.PluginMethod;
-       import com.getcapacitor.annotation.ActivityCallback;
-       import com.getcapacitor.annotation.CapacitorPlugin;
+         import com.getcapacitor.ActivityResult;
+         import com.getcapacitor.Plugin;
+         import com.getcapacitor.PluginCall;
+         import com.getcapacitor.PluginMethod;
+         import com.getcapacitor.annotation.ActivityCallback;
+         import com.getcapacitor.annotation.CapacitorPlugin;
 
-       @CapacitorPlugin(name = "Enhancer")
+         @CapacitorPlugin(name = "Enhancer")
          public class EnhancerPlugin extends Plugin {
 
-        @PluginMethod
-        public void pickVideo(PluginCall call) {
+         @PluginMethod
+         public void pickVideo(PluginCall call) {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("video/*");
             startActivityForResult(call, intent, "videoPicked");
-        }
+         }
 
-        @ActivityCallback
-        private void videoPicked(PluginCall call, ActivityResult result) {
+         @ActivityCallback
+         private void videoPicked(PluginCall call, ActivityResult result) {
             if (result.getResultCode() != android.app.Activity.RESULT_OK) {
                 call.reject("Video selection cancelled");
                 return;
@@ -85,36 +85,37 @@ jobs:
             call.resolve(
                 new com.getcapacitor.JSObject().put("uri", uri.toString())
             );
-        }
-       }
-          JAVA
-       
-      - run: |
-         python3 - <<'PY'
-         p="android/app/src/main/java/com/devil/enhancer/MainActivity.java"
-         s=open(p).read()
+         }
+         }
+      - name: Patch MainActivity
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          p="android/app/src/main/java/com/devil/enhancer/MainActivity.java"
+          s=open(p).read()
 
-        if "import com.devil.enhancer.EnhancerPlugin;" not in s:
-            s=s.replace(
-                "package com.devil.enhancer;",
-                "package com.devil.enhancer;\n\nimport com.devil.enhancer.EnhancerPlugin;"
-            )
+          if "import com.devil.enhancer.EnhancerPlugin;" not in s:
+              s=s.replace(
+                  "package com.devil.enhancer;",
+                  "package com.devil.enhancer;\n\nimport com.devil.enhancer.EnhancerPlugin;"
+              )
 
-        if "registerPlugin(EnhancerPlugin.class);" not in s:
-            s=s.replace(
-                "super.onCreate(savedInstanceState);",
-                "registerPlugin(EnhancerPlugin.class);\n        super.onCreate(savedInstanceState);"
-            )
+          if "registerPlugin(EnhancerPlugin.class);" not in s:
+              s=s.replace(
+                  "super.onCreate(savedInstanceState);",
+                  "super.onCreate(savedInstanceState);\n        registerPlugin(EnhancerPlugin.class);"
+              )
 
-          open(p,"w").write(s)
+          open(p, "w").write(s)
           PY
-    
+
       - run: npx cap sync android
+
       - uses: actions/setup-java@v4
-      
         with:
           distribution: temurin
-          java-version: 21
+          java-version: '21'
+
       - uses: android-actions/setup-android@v3
 
       - run: chmod +x android/gradlew
