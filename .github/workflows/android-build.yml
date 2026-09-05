@@ -215,13 +215,13 @@ jobs:
 
                       call.reject(
                           "Enhancement error: " +
-                          e.getMessage()
-                      );
+                         e.getMessage()
                   }
               }
           }
-          JAVA 
-      - - name: Patch MainActivity
+            JAVA 
+
+      - name: Patch MainActivity
         shell: bash
         run: |
           python3 - <<'PY'
