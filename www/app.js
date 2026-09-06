@@ -639,19 +639,11 @@ if (enhanceBtn) {
             try {
 
                 if (!Enhancer) {
+  task.status = "Enhancer unavailable";
+  renderTasks();
 
-                    task.status =
-                        "Plugin not available";
-
-                    renderTasks();
-
-
-                    toast(
-                        "Enhancer plugin not available."
-                    );
-
-
-                    return;
+  toast("Enhancer plugin not installed.");
+  return;
                 }
 
 
