@@ -19,35 +19,113 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+
       # 2. Setup Node
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+
 
       # 3. Install npm packages
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
 
-      # 4. Create Android project
+
+      # 4. Install Capacitor Android
+      - name: Install Capacitor Android
+        run: |
+          CAP_VERSION=$(node -p "require('./node_modules/@capacitor/core/package.json').version")
+          npm install @capacitor/android@$CAP_VERSION
+
+
+      # 5. Create Android project
       - name: Add Android platform
         run: |
-          if [ ! -d android ]; then
+          if [ ! -d "android" ]; then
             npx cap add android
           fi
+
           npx cap copy android
 
-      # 5. Set minimum Android SDK to 24
+
+      # 6. Setup Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+
+      # 7. Set minimum Android SDK
       - name: Set Android minSdk
+        shell: bash
         run: |
-          python3 -c "from pathlib import Path; import re; p=Path('android/variables.gradle'); s=p.read_text(); s=re.sub(r'minSdkVersion\s*=\s*\d+', 'minSdkVersion = 24', s); p.write_text(s)"
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
 
-      # 6. Add FFmpegKit
+          p = Path("android/variables.gradle")
+
+          if p.exists():
+              text = p.read_text()
+
+              if "minSdkVersion =" in text:
+                  text = re.sub(
+                      r"minSdkVersion\s*=\s*\d+",
+                      "minSdkVersion = 24",
+                      text
+                  )
+              else:
+                  text = text.replace(
+                      "ext {",
+                      "ext {\n    minSdkVersion = 24",
+                      1
+                  )
+
+              p.write_text(text)
+
+          print("Android minSdk set to 24")
+          PY
+
+
+      # 8. Add FFmpegKit
       - name: Add FFmpegKit dependency
+        shell: bash
         run: |
-          python3 -c "from pathlib import Path; p=Path('android/app/build.gradle'); s=p.read_text(); dep='implementation \"dev.ffmpegkit-maintained:ffmpeg-kit-full:8.1.7\"'; s=s.replace('dependencies {', 'dependencies {\n    '+dep, 1) if dep not in s else s; p.write_text(s)"
+          python3 - <<'PY'
+          from pathlib import Path
 
-      # 7. Create EnhancerPlugin
+          p = Path("android/app/build.gradle")
+          text = p.read_text()
+
+          dependency = (
+              "implementation "
+              "'dev.ffmpegkit-maintained:ffmpeg-kit-full-gpl:8.1.7'"
+          )
+
+          if dependency not in text:
+              marker = "dependencies {"
+
+              if marker in text:
+                  text = text.replace(
+                      marker,
+                      marker + "\n    " + dependency,
+                      1
+                  )
+              else:
+                  text += (
+                      "\n\ndependencies {\n"
+                      "    " + dependency + "\n"
+                      "}\n"
+                  )
+
+          p.write_text(text)
+
+          print("FFmpegKit dependency added")
+          PY
+
+
+      # 9. Create EnhancerPlugin
       - name: Create EnhancerPlugin
         shell: bash
         run: |
@@ -59,12 +137,12 @@ jobs:
           import android.app.Activity;
           import android.content.Intent;
           import android.net.Uri;
-          import android.os.Environment;
 
           import androidx.activity.result.ActivityResult;
 
           import com.arthenica.ffmpegkit.FFmpegKit;
           import com.arthenica.ffmpegkit.ReturnCode;
+
           import com.getcapacitor.JSObject;
           import com.getcapacitor.Plugin;
           import com.getcapacitor.PluginCall;
@@ -74,202 +152,394 @@ jobs:
 
           import java.io.File;
           import java.io.FileOutputStream;
+          import java.io.InputStream;
 
           @CapacitorPlugin(name = "Enhancer")
           public class EnhancerPlugin extends Plugin {
 
-          @PluginMethod
-          public void pickVideo(PluginCall call) {
-          Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-          intent.addCategory(Intent.CATEGORY_OPENABLE);
-          intent.setType("video/*");
+              @PluginMethod
+              public void pickVideo(PluginCall call) {
 
-          startActivityForResult(call, intent, "videoPicked");
-          }
+                  Intent intent = new Intent(
+                          Intent.ACTION_OPEN_DOCUMENT
+                  );
 
-          @ActivityCallback
-          private void videoPicked(PluginCall call, ActivityResult result) {
-          if (result.getResultCode() != Activity.RESULT_OK
-                || result.getData() == null
-                || result.getData().getData() == null) {
-            call.reject("Video selection cancelled");
-            return;
-          }
+                  intent.addCategory(
+                          Intent.CATEGORY_OPENABLE
+                  );
 
-          Uri uri = result.getData().getData();
- 
-          JSObject response = new JSObject();
-          response.put("uri", uri.toString());
+                  intent.setType("video/*");
 
-          call.resolve(response);
-          }
+                  startActivityForResult(
+                          call,
+                          intent,
+                          "videoPicked"
+                  );
+              }
 
-          @PluginMethod
-          public void enhanceVideo(PluginCall call) {
 
-          String data = call.getString("data");
-          String mode = call.getString("mode");
-          String fpsValue = call.getString("fps");
+              @ActivityCallback
+              private void videoPicked(
+                      PluginCall call,
+                      ActivityResult result
+              ) {
 
-          if (mode == null || mode.isEmpty()) {
-            mode = "4K";
-          }
+                  if (
+                          result.getResultCode() != Activity.RESULT_OK ||
+                          result.getData() == null ||
+                          result.getData().getData() == null
+                  ) {
+                      call.reject(
+                              "Video selection cancelled"
+                      );
+                      return;
+                  }
 
-          if (fpsValue == null || fpsValue.isEmpty()) {
-            fpsValue = "30";
-          }
+                  Uri uri =
+                          result.getData().getData();
 
-          if (data == null || data.isEmpty()) {
-            call.reject("Video data missing");
-            return;
-          }
+                  JSObject response =
+                          new JSObject();
 
-          final String targetMode = mode;
+                  response.put(
+                          "uri",
+                          uri.toString()
+                  );
 
-          int parsedFps = 30;
+                  call.resolve(response);
+              }
 
-          try {
-            parsedFps = Integer.parseInt(fpsValue);
-          } catch (Exception ignored) {
-            parsedFps = 30;
-          }
 
-          if (parsedFps != 120 && parsedFps != 240) {
-            parsedFps = 30;
-           }
+              @PluginMethod
+              public void enhanceVideo(
+                      PluginCall call
+              ) {
 
-          final int targetFps = parsedFps;
+                  String data =
+                          call.getString("data");
 
-          try {
+                  String mode =
+                          call.getString("mode");
 
-            int commaIndex = data.indexOf(',');
+                  String fpsString =
+                          call.getString("fps");
 
-            if (commaIndex >= 0) {
-                data = data.substring(commaIndex + 1);
-            }
+                  if (
+                          data == null ||
+                          data.isEmpty()
+                  ) {
+                      call.reject(
+                              "Video URI missing"
+                      );
+                      return;
+                  }
 
-            byte[] videoBytes = android.util.Base64.decode(
-                    data,
-                    android.util.Base64.DEFAULT
-            );
+                  if (
+                          mode == null ||
+                          mode.isEmpty()
+                  ) {
+                      mode = "4K";
+                  }
 
-            File inputFile = new File(
-                    getContext().getCacheDir(),
-                    "enhance_input_" + System.currentTimeMillis() + ".mp4"
-            );
+                  int targetFps = 60;
 
-            FileOutputStream outputStream =
-                    new FileOutputStream(inputFile);
+                  try {
+                      if (
+                              fpsString != null &&
+                              !fpsString.isEmpty()
+                      ) {
+                          targetFps =
+                                  Integer.parseInt(
+                                          fpsString
+                                  );
+                      }
+                  } catch (Exception ignored) {
+                      targetFps = 60;
+                  }
 
-            outputStream.write(videoBytes);
-            outputStream.flush();
-            outputStream.close();
+                  if (
+                          targetFps != 60 &&
+                          targetFps != 120 &&
+                          targetFps != 240
+                  ) {
+                      targetFps = 60;
+                  }
 
-            File outputDirectory =
-                    getContext().getExternalFilesDir(
-                            Environment.DIRECTORY_MOVIES
-                    );
+                  final String finalMode = mode;
+                  final int finalFps = targetFps;
 
-            if (outputDirectory == null) {
-                outputDirectory = getContext().getFilesDir();
-            }
+                  try {
 
-            if (!outputDirectory.exists()) {
-                outputDirectory.mkdirs();
-            }
+                      Uri inputUri =
+                              Uri.parse(data);
 
-            File outputFile = new File(
-                    outputDirectory,
-                    "DevilEnhancer_" +
-                            System.currentTimeMillis() +
-                            ".mp4"
-            );
+                      /*
+                       * Copy Android content:// URI
+                       * into temporary local file.
+                       */
+                      File inputFile =
+                              new File(
+                                      getContext()
+                                              .getCacheDir(),
+                                      "devil_input_" +
+                                      System.currentTimeMillis() +
+                                      ".mp4"
+                              );
 
-            String resolution = "3840:2160";
+                      copyUriToFile(
+                              inputUri,
+                              inputFile
+                      );
 
-            if ("8K".equalsIgnoreCase(targetMode)) {
-                resolution = "7680:4320";
-            }
 
-            String videoFilter =
-                    "scale=" + resolution +
-                    ":force_original_aspect_ratio=decrease," +
-                    "pad=" + resolution +
-                    ":(ow-iw)/2:(oh-ih)/2," +
-                    "fps=" + targetFps;
+                      /*
+                       * Output directory
+                       */
+                      File outputDirectory =
+                              getContext()
+                                      .getExternalFilesDir(
+                                              android.os.Environment
+                                                      .DIRECTORY_MOVIES
+                                      );
 
-            String command =
-                    "-y " +
-                    "-i " + quote(inputFile.getAbsolutePath()) + " " +
-                    "-vf " + quote(videoFilter) + " " +
-                    "-c:v mpeg4 " +
-                    "-q:v 3 " +
-                    "-c:a aac " +
-                    "-b:a 192k " +
-                    "-movflags +faststart " +
-                    "-threads 0 " +
-                    quote(outputFile.getAbsolutePath());
+                      if (
+                              outputDirectory == null
+                      ) {
+                          outputDirectory =
+                                  new File(
+                                          getContext()
+                                                  .getFilesDir(),
+                                          "movies"
+                                  );
+                      }
 
-            FFmpegKit.executeAsync(command, session -> {
+                      if (
+                              !outputDirectory.exists()
+                      ) {
+                          outputDirectory.mkdirs();
+                      }
 
-                if (ReturnCode.isSuccess(session.getReturnCode())) {
 
-                    JSObject response = new JSObject();
+                      File outputFile =
+                              new File(
+                                      outputDirectory,
+                                      "DevilEnhancer_" +
+                                      System.currentTimeMillis() +
+                                      ".mp4"
+                              );
 
-                    response.put(
-                            "uri",
-                            outputFile.getAbsolutePath()
-                    );
 
-                    response.put(
-                            "mode",
-                            targetMode
-                    );
+                      /*
+                       * Resolution
+                       */
+                      String resolution =
+                              "3840:2160";
 
-                    response.put(
-                            "fps",
-                            targetFps
-                    );
+                      if (
+                              "8K".equalsIgnoreCase(
+                                      finalMode
+                              )
+                      ) {
+                          resolution =
+                                  "7680:4320";
+                      }
 
-                    response.put(
-                            "fileName",
-                            outputFile.getName()
-                    );
 
-                    call.resolve(response);
+                      /*
+                       * Video processing filter
+                       */
+                      String videoFilter =
+                              "scale=" +
+                              resolution +
+                              ":force_original_aspect_ratio=decrease," +
+                              "pad=" +
+                              resolution +
+                              ":(ow-iw)/2:(oh-ih)/2," +
+                              "fps=" +
+                              finalFps;
 
-                } else {
 
-                    String message =
-                            "FFmpeg processing failed. Code: " +
-                            session.getReturnCode();
+                      /*
+                       * FFmpeg command
+                       */
+                      String command =
+                              "-y " +
+                              "-i " +
+                              quote(
+                                      inputFile
+                                              .getAbsolutePath()
+                              ) +
+                              " " +
+                              "-vf " +
+                              quote(videoFilter) +
+                              " " +
+                              "-c:v libx264 " +
+                              "-preset veryfast " +
+                              "-crf 20 " +
+                              "-pix_fmt yuv420p " +
+                              "-c:a aac " +
+                              "-b:a 192k " +
+                              "-movflags +faststart " +
+                              quote(
+                                      outputFile
+                                              .getAbsolutePath()
+                              );
 
-                    call.reject(message);
-                }
 
-                if (inputFile.exists()) {
-                    inputFile.delete();
-                }
-            });
+                      /*
+                       * Run FFmpeg
+                       */
+                      FFmpegKit.executeAsync(
+                              command,
+                              session -> {
 
-          } catch (Exception e) {
+                                  if (
+                                          ReturnCode.isSuccess(
+                                                  session
+                                                          .getReturnCode()
+                                          )
+                                  ) {
 
-            call.reject(
-                    "Enhancement error: " +
-                    String.valueOf(e.getMessage())
-            );
-           }
-          }
+                                      JSObject response =
+                                              new JSObject();
 
-          private String quote(String value) {
-          return "\"" +
-                value.replace("\"", "\\\"") +
-                "\"";
-           }
+                                      response.put(
+                                              "uri",
+                                              outputFile
+                                                      .getAbsolutePath()
+                                      );
+
+                                      response.put(
+                                              "fileName",
+                                              outputFile.getName()
+                                      );
+
+                                      response.put(
+                                              "mode",
+                                              finalMode
+                                      );
+
+                                      response.put(
+                                              "fps",
+                                              finalFps
+                                      );
+
+                                      call.resolve(
+                                              response
+                                      );
+
+                                  } else {
+
+                                      String error =
+                                              session
+                                                      .getFailStackTrace();
+
+                                      if (
+                                              error == null ||
+                                              error.isEmpty()
+                                      ) {
+                                          error =
+                                                  "FFmpeg processing failed. " +
+                                                  "Return code: " +
+                                                  session
+                                                          .getReturnCode();
+                                      }
+
+                                      call.reject(
+                                              error
+                                      );
+                                  }
+
+
+                                  /*
+                                   * Delete temporary file
+                                   */
+                                  if (
+                                          inputFile.exists()
+                                  ) {
+                                      inputFile.delete();
+                                  }
+                              }
+                      );
+
+                  } catch (Exception e) {
+
+                      call.reject(
+                              "Enhancement error: " +
+                              String.valueOf(
+                                      e.getMessage()
+                              )
+                      );
+                  }
+              }
+
+
+              /*
+               * Copy Android content URI
+               * to local temporary file.
+               */
+              private void copyUriToFile(
+                      Uri uri,
+                      File destination
+              ) throws Exception {
+
+                  InputStream input =
+                          getContext()
+                                  .getContentResolver()
+                                  .openInputStream(uri);
+
+                  if (input == null) {
+                      throw new Exception(
+                              "Cannot open selected video"
+                      );
+                  }
+
+                  FileOutputStream output =
+                          new FileOutputStream(
+                                  destination
+                          );
+
+                  byte[] buffer =
+                          new byte[1024 * 1024];
+
+                  int length;
+
+                  while (
+                          (length =
+                                  input.read(buffer)) != -1
+                  ) {
+                      output.write(
+                              buffer,
+                              0,
+                              length
+                      );
+                  }
+
+                  output.flush();
+                  output.close();
+                  input.close();
+              }
+
+
+              /*
+               * Safely quote FFmpeg paths.
+               */
+              private String quote(
+                      String value
+              ) {
+
+                  return "\"" +
+                          value.replace(
+                                  "\"",
+                                  "\\\""
+                          ) +
+                          "\"";
+              }
           }
           JAVA
 
-      # 8. Create MainActivity
+
+      # 10. Create MainActivity
       - name: Create MainActivity
         shell: bash
         run: |
@@ -282,39 +552,55 @@ jobs:
 
           import com.getcapacitor.BridgeActivity;
 
-          public class MainActivity extends BridgeActivity {
+          public class MainActivity
+                  extends BridgeActivity {
 
-          @Override
-          public void onCreate(Bundle savedInstanceState) {
-          super.onCreate(savedInstanceState);
+              @Override
+              public void onCreate(
+                      Bundle savedInstanceState
+              ) {
 
-          registerPlugin(EnhancerPlugin.class);
-           }
+                  super.onCreate(
+                          savedInstanceState
+                  );
+
+                  registerPlugin(
+                          EnhancerPlugin.class
+                  );
+              }
           }
           JAVA
 
-      # 9. Make Gradle executable
-      - name: Make Gradle executable
-        run: chmod +x android/gradlew
 
-      # 10. Setup Java
+      # 11. Sync Capacitor
+      - name: Sync Capacitor
+        run: |
+          npx cap sync android
+
+
+      # 12. Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
+          cache: gradle
 
-      # 11. Setup Android SDK
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
 
-      # 12. Build APK
+      # 13. Make Gradle executable
+      - name: Make Gradle executable
+        run: |
+          chmod +x android/gradlew
+
+
+      # 14. Build APK
       - name: Build Debug APK
         run: |
           cd android
-          ./gradlew --no-daemon --refresh-dependencies assembleDebug
+          ./gradlew --no-daemon --stacktrace assembleDebug
 
-      # 13. Upload APK
+
+      # 15. Upload APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
