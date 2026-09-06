@@ -267,68 +267,60 @@ if (videoInput) {
     // File selected
     // --------------------------------------------------------
 
-    videoInput.addEventListener("change", event => {
+    videoInput.addEventListener("change", (event) => {
+    const files = event.target.files;
 
-        const files = event.target.files;
+    if (!files || files.length === 0) {
+        return;
+    }
 
-        if (!files || !files.length) {
-            return;
-        }
+    const file = files[0];
 
-        const file = files[0];
+    // Allowed video extensions
+    const allowedExtensions = [
+        "mp4",
+        "mov",
+        "webm",
+        "mkv",
+        "avi",
+        "m4v",
+        "3gp"
+    ];
 
+    // Get file extension safely
+    const extension = file.name
+        ? file.name.split(".").pop().toLowerCase()
+        : "";
 
-        // Check MIME type
-        const isVideo =
-            file.type &&
-            file.type.toLowerCase().startsWith("video/");
+    // Check MIME type
+    const isVideoByMime =
+        file.type &&
+        file.type.toLowerCase().startsWith("video/");
 
+    // Check extension
+    const isVideoByExtension =
+        allowedExtensions.includes(extension);
 
-        // Some Android file pickers may return an empty MIME type.
-        // In that case check the file extension.
-        const extension =
-            file.name
-                .split(".")
-                .pop()
-                ?.toLowerCase();
+    // Accept if either MIME OR extension is valid
+    if (!isVideoByMime && !isVideoByExtension) {
+        alert("Please select a valid video file.");
+        videoInput.value = "";
+        return;
+    }
 
+    // Create video URL
+    const videoURL = URL.createObjectURL(file);
 
-        const allowedExtensions = [
-            "mp4",
-            "mov",
-            "webm",
-            "mkv",
-            "avi",
-            "m4v",
-            "3gp"
-        ];
+    // Set video source
+    video.src = videoURL;
+    video.load();
 
+    // Show video
+    video.style.display = "block";
 
-        if (
-            !isVideo &&
-            !allowedExtensions.includes(extension)
-        ) {
-
-            toast("Please select a valid video file.");
-
-            videoInput.value = "";
-
-            return;
-        }
-
-
-        // Save selected file
-        state.file = file;
-
-
-        // Render
-        renderFile();
-
-
-        toast("Video selected.");
-    });
-}
-
+    console.log("Video selected:", file.name);
+    console.log("Video type:", file.type);
+});
 
 // ============================================================
 // CLEAR / REMOVE VIDEO
