@@ -43,11 +43,12 @@ jobs:
       # 5. Create Android project
       - name: Add Android platform
         run: |
-          if [ ! -d "android" ]; then
-            npx cap add android
-          fi
+         if [ ! -f "android/app/build.gradle" ]; then
+         rm -rf android
+         npx cap add android
+         fi
 
-          npx cap copy android
+             npx cap copy android
 
 
       # 6. Setup Android SDK
