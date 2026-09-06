@@ -91,6 +91,7 @@ jobs:
       - name: Add FFmpegKit dependency
         shell: bash
         run: |
+          npx cap sync android
           python3 - <<'PY'
           from pathlib import Path
 
