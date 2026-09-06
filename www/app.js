@@ -2,8 +2,12 @@
 // DEVIL ENHANCER - APP.JS
 // ============================================================
 
-const state = {
-    file: null,
+// Capacitor Enhancer plugin
+const Enhancer =
+  window.Capacitor &&
+  typeof window.Capacitor.registerPlugin === "function"
+    ? window.Capacitor.registerPlugin("Enhancer")
+    : null;
 
     // 4K / 8K
     mode: "4K",
@@ -633,12 +637,6 @@ if (enhanceBtn) {
             // ---------------------------------------------
 
             try {
-
-                const Enhancer =
-                    window.Capacitor &&
-                    window.Capacitor.Plugins &&
-                    window.Capacitor.Plugins.Enhancer;
-
 
                 if (!Enhancer) {
 
